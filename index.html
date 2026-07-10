@@ -419,17 +419,18 @@ function Storefront() {
     try { localStorage.setItem('sky_cart', JSON.stringify(cart)); } catch (e) {}
   }, [cart]);
 
-  // Al buscar, bajamos autom\u00e1ticamente hasta el cat\u00e1logo para que se vean los resultados
-  // (una sola vez al empezar a escribir, no en cada tecla).
-  const didScrollForSearch = React.useRef(false);
-  React.useEffect(() => {
-    if (search.trim() && !didScrollForSearch.current) {
-      didScrollForSearch.current = true;
-      const el = document.getElementById('productos');
-      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
-    }
-    if (!search.trim()) didScrollForSearch.current = false;
-  }, [search]);
+  // Al elegir una sugerencia del buscador, bajamos hasta ese producto en el catálogo.
+  const goToProduct = (p) => {
+    setSearchOpen(false);
+    setSearch('');
+    setTimeout(() => {
+      const el = document.getElementById('prod-' + p.id);
+      if (el) {
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        el.animate([{ boxShadow: '0 0 0 3px var(--frambuesa)' }, { boxShadow: '0 0 0 3px transparent' }], { duration: 1600 });
+      }
+    }, 60);
+  };
 
   const cartKey = (p, tone) => (tone ? `${p.title} · Tono ${tone}` : p.title);
   const remainingFor = (p, tone) => stockFor(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
@@ -502,13 +503,38 @@ function Storefront() {
         </div>
         {searchOpen && (
           <div style={{ ...wrap, paddingBottom: '14px' }}>
-            <input
-              autoFocus
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar producto por nombre…"
-              style={{ width: '100%', maxWidth: '420px', padding: '10px 16px', borderRadius: 'var(--radius-pill)', border: 'var(--border-1)', fontSize: '.92rem', fontFamily: 'var(--font-body)', color: 'var(--ciruela)', background: '#fff' }}
-            />
+            <div style={{ position: 'relative', maxWidth: '460px' }}>
+              <input
+                autoFocus
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar producto por nombre…"
+                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 16px', borderRadius: 'var(--radius-pill)', border: 'var(--border-1)', fontSize: '.92rem', fontFamily: 'var(--font-body)', color: 'var(--ciruela)', background: '#fff' }}
+              />
+              {search.trim() && (() => {
+                const term = search.trim().toLowerCase();
+                const matches = products.filter((p) => p.title.toLowerCase().includes(term)).slice(0, 8);
+                return (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: '#fff', border: 'var(--border-1)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-drawer)', overflow: 'hidden', zIndex: 60, maxHeight: '340px', overflowY: 'auto' }}>
+                    {matches.length === 0 ? (
+                      <div style={{ padding: '14px 16px', color: 'var(--ciruela-60)', fontSize: '.9rem' }}>No encontramos productos con ese nombre.</div>
+                    ) : matches.map((p) => {
+                      const thumb = (p.images && p.images[0]) || p.image;
+                      return (
+                        <button key={p.id} onClick={() => goToProduct(p)} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', border: 'none', borderBottom: '1px solid rgba(62,34,51,.07)', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+                          <span style={{ width: '40px', height: '40px', borderRadius: '8px', flexShrink: 0, background: thumb ? `url(${thumb}) center/cover` : 'var(--petalo)' }} />
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: 'block', fontSize: '.9rem', fontWeight: 600, color: 'var(--ciruela)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</span>
+                            <span style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{p.category}</span>
+                          </span>
+                          <span style={{ fontSize: '.9rem', fontWeight: 700, color: 'var(--frambuesa)', whiteSpace: 'nowrap' }}>{p.price}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         )}
         {menuOpen && (
@@ -582,7 +608,7 @@ function Storefront() {
               <div key={cat} id={CATEGORY_ANCHORS[cat]} style={{ marginBottom: '46px', scrollMarginTop: '84px' }}>
                 <h3 style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '.85rem', letterSpacing: 'var(--tracking-tag)', textTransform: 'uppercase', color: 'var(--chicle)', marginBottom: '18px' }}>{cat}</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '22px' }}>
-                  {products.filter((p) => p.category === cat).map((p) => <ProductCard key={p.id} {...p} onAdd={(tone) => add(p, tone)} getRemaining={(tone) => remainingFor(p, tone)} />)}
+                  {products.filter((p) => p.category === cat).map((p) => <ProductCard key={p.id} {...p} id={'prod-' + p.id} onAdd={(tone) => add(p, tone)} getRemaining={(tone) => remainingFor(p, tone)} />)}
                 </div>
               </div>
             ));
