@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"SkyMakeupDesignSystem_ae8c70","components":[{"name":"Badge","sourcePath":"components/core/Badge.jsx"},{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"CategoryBubble","sourcePath":"components/core/CategoryBubble.jsx"},{"name":"Eyebrow","sourcePath":"components/core/Eyebrow.jsx"},{"name":"Marquee","sourcePath":"components/core/Marquee.jsx"},{"name":"SWATCHES","sourcePath":"components/core/ProductCard.jsx"},{"name":"ProductCard","sourcePath":"components/core/ProductCard.jsx"},{"name":"StepCard","sourcePath":"components/core/StepCard.jsx"},{"name":"TrustItem","sourcePath":"components/core/TrustItem.jsx"}],"sourceHashes":{"components/core/Badge.jsx":"faa79a09dde0","components/core/Button.jsx":"4724e5b0f3bd","components/core/CategoryBubble.jsx":"0e51e524b2c5","components/core/Eyebrow.jsx":"dc75d2bd5a8d","components/core/Marquee.jsx":"e8a977893ec0","components/core/ProductCard.jsx":"d5bb5c725645","components/core/StepCard.jsx":"07ccf6827106","components/core/TrustItem.jsx":"5b6187aad560","ui_kits/storefront/CartDrawer.jsx":"106e0635d2fd","ui_kits/storefront/Storefront.jsx":"399eda8d7965"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":4,"namespace":"SkyMakeupDesignSystem_ae8c70","components":[{"name":"Badge","sourcePath":"components/core/Badge.jsx"},{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"CategoryBubble","sourcePath":"components/core/CategoryBubble.jsx"},{"name":"Eyebrow","sourcePath":"components/core/Eyebrow.jsx"},{"name":"Marquee","sourcePath":"components/core/Marquee.jsx"},{"name":"SWATCHES","sourcePath":"components/core/ProductCard.jsx"},{"name":"ProductCard","sourcePath":"components/core/ProductCard.jsx"},{"name":"StepCard","sourcePath":"components/core/StepCard.jsx"},{"name":"TrustItem","sourcePath":"components/core/TrustItem.jsx"}],"sourceHashes":{"components/core/Badge.jsx":"faa79a09dde0","components/core/Button.jsx":"4724e5b0f3bd","components/core/CategoryBubble.jsx":"0e51e524b2c5","components/core/Eyebrow.jsx":"dc75d2bd5a8d","components/core/Marquee.jsx":"e8a977893ec0","components/core/ProductCard.jsx":"9c1cb1a2ebfc","components/core/StepCard.jsx":"07ccf6827106","components/core/TrustItem.jsx":"5b6187aad560","dist/seed-products.js":"93484699bf70","dist/supabase-client.js":"afd4106ab6a5","ui_kits/admin/Admin.jsx":"cf34d28a1004","ui_kits/admin/OrdersTab.jsx":"012cff640ef6","ui_kits/admin/ProductsTab.jsx":"d065ee452bae","ui_kits/admin/SalesTab.jsx":"d7f6a7bdc20f","ui_kits/storefront/CartDrawer.jsx":"c02cb1c8e721","ui_kits/storefront/Storefront.jsx":"2e6596eece6d","ui_kits/storefront/seed-products.js":"93484699bf70","ui_kits/storefront/supabase-client.js":"afd4106ab6a5"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -315,6 +315,7 @@ function ProductCard({
   price,
   swatch = 1,
   image,
+  images,
   fit = 'cover',
   badge,
   tones,
@@ -324,14 +325,22 @@ function ProductCard({
   style,
   ...rest
 }) {
-  const swatchBg = image ? undefined : SWATCHES[swatch] || swatch;
+  const gallery = images && images.length ? images : image ? [image] : [];
+  const hasImage = gallery.length > 0;
+  const swatchBg = hasImage ? undefined : SWATCHES[swatch] || swatch;
   const [tone, setTone] = React.useState(tones && tones.length ? tones[0] : null);
+  const [idx, setIdx] = React.useState(0);
+  const [lightbox, setLightbox] = React.useState(false);
   const rem = t => getRemaining ? getRemaining(t) : Infinity;
   const soldOut = rem(tone) <= 0;
   const hasTones = tones && tones.length > 0;
   const anyLeft = hasTones ? tones.some(t => rem(t) > 0) : rem(tone) > 0;
   const fullyOut = !anyLeft;
   const shownBadge = fullyOut ? 'Agotado' : badge;
+  const go = (e, dir) => {
+    e.stopPropagation();
+    setIdx(i => (i + dir + gallery.length) % gallery.length);
+  };
   return /*#__PURE__*/React.createElement("article", _extends({}, rest, {
     className: "sky-card",
     style: {
@@ -345,13 +354,15 @@ function ProductCard({
       ...style
     }
   }), /*#__PURE__*/React.createElement("div", {
+    onClick: () => hasImage && setLightbox(true),
     style: {
       aspectRatio: '4 / 5',
       position: 'relative',
       overflow: 'hidden',
-      background: image ? fit === 'contain' ? 'var(--petalo)' : undefined : swatchBg,
-      backgroundImage: image ? `url(${image})` : undefined,
-      backgroundSize: image ? fit : undefined,
+      cursor: hasImage ? 'zoom-in' : 'default',
+      background: hasImage ? fit === 'contain' ? 'var(--petalo)' : undefined : swatchBg,
+      backgroundImage: hasImage ? `url(${gallery[idx]})` : undefined,
+      backgroundSize: hasImage ? fit : undefined,
       backgroundRepeat: 'no-repeat',
       backgroundPosition: 'center'
     }
@@ -365,13 +376,42 @@ function ProductCard({
         color: '#fff'
       } : {})
     }
-  }, shownBadge), fullyOut && image && /*#__PURE__*/React.createElement("div", {
+  }, shownBadge), fullyOut && hasImage && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       inset: 0,
       background: 'rgba(62,34,51,.28)'
     }
-  })), /*#__PURE__*/React.createElement("div", {
+  }), gallery.length > 1 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: e => go(e, -1),
+    "aria-label": "Foto anterior",
+    style: galleryArrowStyle('left')
+  }, "\u2039"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: e => go(e, 1),
+    "aria-label": "Foto siguiente",
+    style: galleryArrowStyle('right')
+  }, "\u203A"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      bottom: '10px',
+      left: 0,
+      right: 0,
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '5px'
+    }
+  }, gallery.map((_, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    style: {
+      width: '6px',
+      height: '6px',
+      borderRadius: '50%',
+      background: i === idx ? '#fff' : 'rgba(255,255,255,.5)',
+      boxShadow: '0 0 0 1px rgba(0,0,0,.15)'
+    }
+  }))))), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '20px',
       display: 'flex',
@@ -445,7 +485,84 @@ function ProductCard({
     size: "sm",
     onClick: () => onAdd && onAdd(tone),
     disabled: soldOut
-  }, soldOut ? 'Sin stock' : addLabel))));
+  }, soldOut ? 'Sin stock' : addLabel))), lightbox && hasImage && /*#__PURE__*/React.createElement("div", {
+    onClick: () => setLightbox(false),
+    style: {
+      position: 'fixed',
+      inset: 0,
+      zIndex: 1000,
+      background: 'rgba(62,34,51,.55)',
+      display: 'grid',
+      placeItems: 'center',
+      padding: '40px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: {
+      position: 'relative',
+      maxWidth: 'min(520px,90vw)',
+      maxHeight: '82vh'
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: gallery[idx],
+    alt: title,
+    style: {
+      display: 'block',
+      maxWidth: '100%',
+      maxHeight: '82vh',
+      borderRadius: 'var(--radius)',
+      boxShadow: '0 20px 60px rgba(62,34,51,.4)',
+      background: '#fff'
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setLightbox(false),
+    "aria-label": "Cerrar",
+    style: {
+      position: 'absolute',
+      top: '-16px',
+      right: '-16px',
+      width: '36px',
+      height: '36px',
+      borderRadius: '50%',
+      border: 'none',
+      background: '#fff',
+      color: 'var(--ciruela)',
+      fontSize: '1.1rem',
+      cursor: 'pointer',
+      boxShadow: '0 4px 14px rgba(62,34,51,.3)'
+    }
+  }, "\u2715"), gallery.length > 1 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: e => go(e, -1),
+    "aria-label": "Foto anterior",
+    style: galleryArrowStyle('left', true)
+  }, "\u2039"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: e => go(e, 1),
+    "aria-label": "Foto siguiente",
+    style: galleryArrowStyle('right', true)
+  }, "\u203A")))));
+}
+function galleryArrowStyle(side, big) {
+  return {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    [side]: big ? '-18px' : '8px',
+    width: big ? '38px' : '28px',
+    height: big ? '38px' : '28px',
+    borderRadius: '50%',
+    border: 'none',
+    background: 'rgba(255,255,255,.88)',
+    color: 'var(--ciruela)',
+    fontSize: big ? '1.3rem' : '1.1rem',
+    cursor: 'pointer',
+    display: 'grid',
+    placeItems: 'center',
+    lineHeight: 1,
+    boxShadow: '0 2px 8px rgba(62,34,51,.25)'
+  };
 }
 Object.assign(__ds_scope, { SWATCHES, ProductCard });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/core/ProductCard.jsx", error: String((e && e.message) || e) }); }
@@ -553,6 +670,1476 @@ function TrustItem({
 Object.assign(__ds_scope, { TrustItem });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/core/TrustItem.jsx", error: String((e && e.message) || e) }); }
 
+// dist/seed-products.js
+try { (() => {
+/* Sky Makeup — datos de los 30 productos actuales, para la carga inicial (seed) a Supabase.
+   Las imágenes apuntan al dominio ya publicado (no hace falta resubirlas). */
+const IMG_BASE = 'https://skymakeup.mitsistemas.com.ar/assets/products/framed/';
+const SEED_PRODUCTS = [
+// Rostro
+{
+  category: 'Rostro',
+  title: 'Polvo compacto Rimera Quince tono 03',
+  description: 'Acabado mate que sella tu base y controla brillos todo el día.',
+  price: 3000,
+  image_url: IMG_BASE + 'polvo-rimera-quince-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Base Pink 21 tono 01',
+  description: 'Cobertura media y textura liviana, ideal para el día a día.',
+  price: 3000,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Rubor en polvo Ushas',
+  description: 'Color natural y fácil de difuminar. Elegí tu tono.',
+  price: 2500,
+  image_url: IMG_BASE + 'rubor-ushas.jpeg',
+  tones: ['04', '05'],
+  stock: {
+    '04': 1,
+    '05': 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Base Ruby Rose tono 03',
+  description: 'Cobertura alta con acabado luminoso.',
+  price: 4500,
+  image_url: null,
+  tones: null,
+  badge: 'Más vendido',
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Base Huda tono 220',
+  description: 'Acabado natural de larga duración.',
+  price: 3000,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Corrector',
+  description: 'Cubre ojeras e imperfecciones sin marcar líneas. Elegí tu tono.',
+  price: 3000,
+  image_url: IMG_BASE + 'corrector.jpeg',
+  tones: ['02', '03'],
+  stock: {
+    '02': 1,
+    '03': 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Set de esponjas x7',
+  description: 'Set completo para aplicar base, corrector y polvo como una pro.',
+  price: 3000,
+  image_url: IMG_BASE + 'set-esponjas-x7.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+},
+// Labiales
+{
+  category: 'Labiales',
+  title: 'Gloss Pink 21',
+  description: 'Brillo espejado sin sensación pegajosa. Elegí tu tono.',
+  price: 3200,
+  image_url: IMG_BASE + 'gloss-pink21.jpeg',
+  tones: ['01', '05'],
+  badge: 'Más vendido',
+  stock: {
+    '01': 1,
+    '05': 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Gloss Mely tono 05',
+  description: 'Hidrata y da brillo con un toque de color.',
+  price: 3000,
+  image_url: IMG_BASE + 'gloss-mely-05.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte Pink 21 tono 03',
+  description: 'Acabado mate aterciopelado de larga duración.',
+  price: 2500,
+  image_url: IMG_BASE + 'labial-matte-pink21-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte y gloss 2 en 1 Laurenza',
+  description: 'Dos acabados en un solo producto: mate de un lado, gloss del otro.',
+  price: 3800,
+  image_url: IMG_BASE + 'labial-gloss-laurenza.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte Mely tono 03',
+  description: 'Color intenso con acabado mate parejo.',
+  price: 2800,
+  image_url: IMG_BASE + 'labial-matte-mely-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Lip gloss matte Mely 03',
+  description: 'Brillo suave con acabado aterciopelado, no pegajoso.',
+  price: 3000,
+  image_url: IMG_BASE + 'lip-gloss-mely-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Gloss Tei tono 03',
+  description: 'Brillo jugoso para looks del día a día.',
+  price: 2500,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte Tei tono 03',
+  description: 'Mate cómodo que no reseca.',
+  price: 3000,
+  image_url: IMG_BASE + 'labial-matte-tei-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte en barra Ushas tono 02',
+  description: 'Color parejo en una sola pasada.',
+  price: 2500,
+  image_url: IMG_BASE + 'labial-barra-ushas-02.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Delineador de labios',
+  description: 'Define el contorno y hace durar más tu labial.',
+  price: 1500,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte Tei',
+  description: 'Mate cómodo que no reseca, color parejo en un solo paso.',
+  price: 3000,
+  image_url: IMG_BASE + 'labial-matte-tei.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+},
+// Máscaras y Delineadores
+{
+  category: 'Máscaras y Delineadores',
+  title: 'Arqueador',
+  description: 'Fija y da forma a tus cejas todo el día.',
+  price: 3200,
+  image_url: IMG_BASE + 'arqueador.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Paleta de sombras Pink 21',
+  description: 'Tonos combinables para looks naturales o más intensos.',
+  price: 5000,
+  image_url: IMG_BASE + 'paleta-pink21.jpeg',
+  tones: null,
+  badge: 'Nuevo',
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Máscara de pestañas Pink 21',
+  description: 'Volumen y largo sin grumos.',
+  price: 3000,
+  image_url: IMG_BASE + 'mascara-pink21.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Máscara de pestañas mini Tango',
+  description: 'Formato mini, ideal para retocar en la cartera.',
+  price: 3000,
+  image_url: IMG_BASE + 'mascara-mini-tango.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Delineador en fibra líquido NAEZ',
+  description: 'Punta de fibra ultrafina para un trazo preciso y parejo.',
+  price: 2000,
+  image_url: IMG_BASE + 'delineador-fibra-naez.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Delineador líquido Ruby Rose',
+  description: 'Negro intenso y secado rápido para un cat-eye bien definido.',
+  price: 4000,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+},
+// Pestañas y Pegamentos
+{
+  category: 'Pestañas y Pegamentos',
+  title: 'Sellador + Bonder',
+  description: 'Fija tus pestañas y sella el pegamento para que duren muchísimo más.',
+  price: 5500,
+  image_url: IMG_BASE + 'sellador-bonder.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Pestañas y Pegamentos',
+  title: 'Pestañas en grupo 40D+50D 0.07D MIX NAEZ',
+  description: 'Pestañas en grupo, mix 40D y 50D con curva D 0.07, para volumen a medida.',
+  price: 6800,
+  image_url: null,
+  tones: null,
+  badge: 'Nuevo',
+  stock: {
+    _default: 1
+  }
+}];
+SEED_PRODUCTS.forEach((p, i) => {
+  p.sort_order = i;
+});
+window.SEED_PRODUCTS = SEED_PRODUCTS;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "dist/seed-products.js", error: String((e && e.message) || e) }); }
+
+// dist/supabase-client.js
+try { (() => {
+/* Sky Makeup — cliente Supabase compartido (storefront + admin).
+   Cargar despu\u00e9s de la librer\u00eda supabase-js v2 vía CDN. */
+window.sb = supabase.createClient('https://bohthswmsvcllowhmtgd.supabase.co', 'sb_publishable_C0QY7naaRdtZYvg4ei8ytQ_h65-piuW');
+})(); } catch (e) { __ds_ns.__errors.push({ path: "dist/supabase-client.js", error: String((e && e.message) || e) }); }
+
+// ui_kits/admin/Admin.jsx
+try { (() => {
+/* Sky Makeup — Panel de administración.
+   Login + gestión de productos (stock, precio, fotos), pedidos y registro de ventas.
+   Usa el cliente Supabase compartido (window.sb) y componentes del design system. */
+const SK = window.SkyMakeupDesignSystem_ae8c70;
+const {
+  Button,
+  Eyebrow
+} = SK;
+const wrap = {
+  maxWidth: '1100px',
+  margin: '0 auto',
+  padding: '0 24px'
+};
+const input = {
+  padding: '10px 12px',
+  borderRadius: '10px',
+  border: '1px solid rgba(62,34,51,.18)',
+  fontSize: '.92rem',
+  fontFamily: 'var(--font-body)',
+  color: 'var(--ciruela)',
+  background: '#fff',
+  width: '100%',
+  boxSizing: 'border-box'
+};
+const card = {
+  background: '#fff',
+  border: 'var(--border-1)',
+  borderRadius: 'var(--radius-md)',
+  padding: '18px 20px'
+};
+const label = {
+  fontSize: '.72rem',
+  fontWeight: 600,
+  letterSpacing: '.06em',
+  textTransform: 'uppercase',
+  color: 'var(--ciruela-60)',
+  display: 'block',
+  marginBottom: '4px'
+};
+function fmtMoney(n) {
+  return '$' + Number(n || 0).toLocaleString('es-AR');
+}
+
+// ---- Redimensiona la foto subida a 4:5 centrada (mismo criterio que el catálogo). ----
+function resizeToFrame(file, tw = 640, th = 800) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.max(tw / img.width, th / img.height);
+        const dw = img.width * scale,
+          dh = img.height * scale;
+        const dx = (tw - dw) / 2,
+          dy = (th - dh) / 2;
+        const c = document.createElement('canvas');
+        c.width = tw;
+        c.height = th;
+        c.getContext('2d').drawImage(img, dx, dy, dw, dh);
+        c.toBlob(blob => resolve(blob), 'image/jpeg', 0.85);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function slugify(s) {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+}
+const CATEGORIES = ['Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos', 'Skincare'];
+function Admin() {
+  const [session, setSession] = React.useState(null);
+  const [checking, setChecking] = React.useState(true);
+  const [tab, setTab] = React.useState('productos');
+  React.useEffect(() => {
+    window.sb.auth.getSession().then(({
+      data
+    }) => {
+      setSession(data.session);
+      setChecking(false);
+    });
+    const {
+      data: sub
+    } = window.sb.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  if (checking) return null;
+  if (!session) return /*#__PURE__*/React.createElement(Login, null);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: '100%',
+      background: 'var(--petalo)',
+      color: 'var(--ciruela)'
+    }
+  }, /*#__PURE__*/React.createElement("header", {
+    style: {
+      borderBottom: 'var(--border-1)',
+      background: '#fff'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...wrap,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      height: '68px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      fontFamily: 'var(--font-display)',
+      fontSize: '1.3rem'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: '38px',
+      height: '38px',
+      borderRadius: '50%',
+      border: '1px solid rgba(242,107,165,.4)',
+      background: 'url(../../assets/logo.jpg) center / contain no-repeat',
+      display: 'block'
+    }
+  }), "Sky ", /*#__PURE__*/React.createElement("em", {
+    style: {
+      fontStyle: 'normal',
+      color: 'var(--frambuesa)'
+    }
+  }, "Makeup"), " \xB7 Admin"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => window.sb.auth.signOut(),
+    style: {
+      background: 'none',
+      border: 'none',
+      color: 'var(--ciruela-60)',
+      cursor: 'pointer',
+      fontSize: '.9rem'
+    }
+  }, "Cerrar sesi\xF3n")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...wrap,
+      display: 'flex',
+      gap: '4px',
+      paddingBottom: '2px'
+    }
+  }, [['productos', 'Productos'], ['pedidos', 'Pedidos'], ['ventas', 'Ventas']].map(([key, lbl]) => /*#__PURE__*/React.createElement("button", {
+    key: key,
+    onClick: () => setTab(key),
+    style: {
+      padding: '10px 18px',
+      border: 'none',
+      background: 'none',
+      cursor: 'pointer',
+      fontSize: '.92rem',
+      fontWeight: 600,
+      color: tab === key ? 'var(--frambuesa)' : 'var(--ciruela-60)',
+      borderBottom: tab === key ? '2px solid var(--frambuesa)' : '2px solid transparent'
+    }
+  }, lbl)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...wrap,
+      padding: '32px 24px 60px'
+    }
+  }, tab === 'productos' && /*#__PURE__*/React.createElement(ProductsTab, null), tab === 'pedidos' && /*#__PURE__*/React.createElement(OrdersTab, null), tab === 'ventas' && /*#__PURE__*/React.createElement(SalesTab, null)));
+}
+function Login() {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const submit = async e => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    const {
+      error
+    } = await window.sb.auth.signInWithPassword({
+      email: email.trim(),
+      password
+    });
+    setLoading(false);
+    if (error) setError('Email o contraseña incorrectos.');
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: '100%',
+      display: 'grid',
+      placeItems: 'center',
+      background: 'var(--petalo)',
+      padding: '24px'
+    }
+  }, /*#__PURE__*/React.createElement("form", {
+    onSubmit: submit,
+    style: {
+      ...card,
+      width: '100%',
+      maxWidth: '360px'
+    }
+  }, /*#__PURE__*/React.createElement("h1", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 400,
+      fontSize: '1.5rem',
+      margin: '0 0 4px'
+    }
+  }, "Sky ", /*#__PURE__*/React.createElement("em", {
+    style: {
+      fontStyle: 'normal',
+      color: 'var(--frambuesa)'
+    }
+  }, "Makeup")), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: 'var(--ciruela-60)',
+      fontSize: '.9rem',
+      margin: '0 0 20px'
+    }
+  }, "Panel de administraci\xF3n"), /*#__PURE__*/React.createElement("label", {
+    style: label
+  }, "Email"), /*#__PURE__*/React.createElement("input", {
+    style: {
+      ...input,
+      marginBottom: '14px'
+    },
+    type: "email",
+    value: email,
+    onChange: e => setEmail(e.target.value),
+    required: true
+  }), /*#__PURE__*/React.createElement("label", {
+    style: label
+  }, "Contrase\xF1a"), /*#__PURE__*/React.createElement("input", {
+    style: {
+      ...input,
+      marginBottom: '16px'
+    },
+    type: "password",
+    value: password,
+    onChange: e => setPassword(e.target.value),
+    required: true
+  }), error && /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: '#B3261E',
+      fontSize: '.85rem',
+      margin: '0 0 12px'
+    }
+  }, error), /*#__PURE__*/React.createElement(Button, {
+    type: "submit",
+    style: {
+      width: '100%',
+      ...(loading ? {
+        opacity: .6,
+        pointerEvents: 'none'
+      } : {})
+    }
+  }, loading ? 'Ingresando…' : 'Ingresar')));
+}
+window.Admin = Admin;
+window.__skyAdminShared = {
+  wrap,
+  input,
+  card,
+  label,
+  fmtMoney,
+  resizeToFrame,
+  slugify,
+  CATEGORIES
+};
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/admin/Admin.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/admin/OrdersTab.jsx
+try { (() => {
+/* Sky Makeup — Admin: pestaña Pedidos. Marcar pagado/cancelado; cancelar devuelve el stock. */
+function OrdersTab() {
+  const {
+    fmtMoney
+  } = window.__skyAdminShared;
+  const [orders, setOrders] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filter, setFilter] = React.useState('pending');
+  const load = () => {
+    setLoading(true);
+    window.sb.from('orders').select('*').order('created_at', {
+      ascending: false
+    }).then(({
+      data,
+      error
+    }) => {
+      if (!error) setOrders(data || []);
+      setLoading(false);
+    });
+  };
+  React.useEffect(load, []);
+  const setStatus = async (order, status) => {
+    if (status === 'cancelled' && order.status !== 'cancelled') {
+      // Devolver stock reservado.
+      for (const item of order.items || []) {
+        if (item.productId) await window.sb.rpc('restore_stock', {
+          p_id: item.productId,
+          p_tone: item.tone,
+          p_qty: item.qty
+        });
+      }
+    }
+    await window.sb.from('orders').update({
+      status
+    }).eq('id', order.id);
+    setOrders(os => os.map(o => o.id === order.id ? {
+      ...o,
+      status
+    } : o));
+  };
+  const shown = filter === 'todos' ? orders : orders.filter(o => o.status === filter);
+  const badgeColor = {
+    pending: '#B08900',
+    paid: '#2E7D32',
+    cancelled: '#B3261E'
+  };
+  const badgeLabel = {
+    pending: 'Pendiente',
+    paid: 'Pagado',
+    cancelled: 'Cancelado'
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '18px',
+      flexWrap: 'wrap',
+      gap: '10px'
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 400,
+      fontSize: '1.4rem',
+      margin: 0
+    }
+  }, "Pedidos"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: '6px'
+    }
+  }, [['pending', 'Pendientes'], ['paid', 'Pagados'], ['cancelled', 'Cancelados'], ['todos', 'Todos']].map(([k, l]) => /*#__PURE__*/React.createElement("button", {
+    key: k,
+    onClick: () => setFilter(k),
+    style: {
+      padding: '7px 14px',
+      borderRadius: '999px',
+      border: '1px solid rgba(62,34,51,.18)',
+      cursor: 'pointer',
+      fontSize: '.82rem',
+      background: filter === k ? 'var(--frambuesa)' : '#fff',
+      color: filter === k ? '#fff' : 'var(--ciruela)'
+    }
+  }, l)))), loading ? /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: 'var(--ciruela-60)'
+    }
+  }, "Cargando\u2026") : shown.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: 'var(--ciruela-60)'
+    }
+  }, "No hay pedidos en esta categor\xEDa.") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px'
+    }
+  }, shown.map(o => /*#__PURE__*/React.createElement("div", {
+    key: o.id,
+    style: {
+      background: '#fff',
+      border: 'var(--border-1)',
+      borderRadius: 'var(--radius-md)',
+      padding: '16px 20px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: '12px',
+      marginBottom: '8px'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, o.customer_name), " \xB7 ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--ciruela-60)'
+    }
+  }, o.customer_phone), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '.78rem',
+      color: 'var(--ciruela-60)'
+    }
+  }, new Date(o.created_at).toLocaleString('es-AR'))), /*#__PURE__*/React.createElement("span", {
+    style: {
+      padding: '4px 12px',
+      borderRadius: '999px',
+      background: badgeColor[o.status] + '20',
+      color: badgeColor[o.status],
+      fontSize: '.78rem',
+      fontWeight: 700,
+      whiteSpace: 'nowrap'
+    }
+  }, badgeLabel[o.status])), /*#__PURE__*/React.createElement("ul", {
+    style: {
+      margin: '0 0 10px',
+      padding: '0 0 0 18px',
+      fontSize: '.88rem'
+    }
+  }, (o.items || []).map((it, i) => /*#__PURE__*/React.createElement("li", {
+    key: i
+  }, it.qty, "x ", it.title, " \u2014 ", fmtMoney(it.price * it.qty)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("b", null, fmtMoney(o.total)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: '8px'
+    }
+  }, o.status !== 'paid' && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setStatus(o, 'paid'),
+    style: {
+      padding: '7px 14px',
+      borderRadius: '999px',
+      border: 'none',
+      background: '#2E7D32',
+      color: '#fff',
+      fontSize: '.8rem',
+      cursor: 'pointer'
+    }
+  }, "Marcar pagado"), o.status !== 'cancelled' && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setStatus(o, 'cancelled'),
+    style: {
+      padding: '7px 14px',
+      borderRadius: '999px',
+      border: '1px solid #B3261E',
+      background: 'none',
+      color: '#B3261E',
+      fontSize: '.8rem',
+      cursor: 'pointer'
+    }
+  }, "Cancelar")))))));
+}
+window.OrdersTab = OrdersTab;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/admin/OrdersTab.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/admin/ProductsTab.jsx
+try { (() => {
+/* Sky Makeup — Admin: pestaña Productos.
+   Editar stock/precio/estado, agregar producto nuevo con foto (auto-recorte 4:5), eliminar. */
+function ProductsTab() {
+  const {
+    wrap,
+    input,
+    card,
+    label,
+    fmtMoney,
+    resizeToFrame,
+    slugify,
+    CATEGORIES
+  } = window.__skyAdminShared;
+  const [products, setProducts] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [showForm, setShowForm] = React.useState(false);
+  const load = () => {
+    setLoading(true);
+    window.sb.from('products').select('*').order('category').order('sort_order').then(({
+      data,
+      error
+    }) => {
+      if (!error) setProducts(data || []);
+      setLoading(false);
+    });
+  };
+  React.useEffect(load, []);
+  const saveField = async (id, patch) => {
+    setProducts(ps => ps.map(p => p.id === id ? {
+      ...p,
+      ...patch
+    } : p));
+    await window.sb.from('products').update(patch).eq('id', id);
+  };
+  const removeProduct = async id => {
+    if (!confirm('¿Eliminar este producto? No se puede deshacer.')) return;
+    await window.sb.from('products').delete().eq('id', id);
+    setProducts(ps => ps.filter(p => p.id !== id));
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '20px'
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 400,
+      fontSize: '1.4rem',
+      margin: 0
+    }
+  }, "Productos"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowForm(s => !s),
+    style: {
+      padding: '10px 18px',
+      borderRadius: '999px',
+      border: 'none',
+      background: 'var(--frambuesa)',
+      color: '#fff',
+      fontWeight: 600,
+      cursor: 'pointer'
+    }
+  }, showForm ? 'Cancelar' : '+ Agregar producto')), showForm && /*#__PURE__*/React.createElement(NewProductForm, {
+    onDone: () => {
+      setShowForm(false);
+      load();
+    }
+  }), loading ? /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: 'var(--ciruela-60)'
+    }
+  }, "Cargando\u2026") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px'
+    }
+  }, products.map(p => /*#__PURE__*/React.createElement(ProductRow, {
+    key: p.id,
+    p: p,
+    onSave: saveField,
+    onDelete: removeProduct
+  }))));
+}
+function ProductRow({
+  p,
+  onSave,
+  onDelete
+}) {
+  const {
+    input,
+    fmtMoney,
+    resizeToFrame,
+    slugify
+  } = window.__skyAdminShared;
+  const [expanded, setExpanded] = React.useState(false);
+  const [title, setTitle] = React.useState(p.title);
+  const [description, setDescription] = React.useState(p.description || '');
+  const [price, setPrice] = React.useState(p.price);
+  const tones = p.tones && p.tones.length ? p.tones : null;
+  const [stock, setStock] = React.useState(p.stock || {});
+  const [images, setImages] = React.useState(p.images && p.images.length ? p.images : p.image_url ? [p.image_url] : []);
+  const [uploading, setUploading] = React.useState(false);
+  const commitPrice = () => {
+    if (Number(price) !== Number(p.price)) onSave(p.id, {
+      price: Number(price)
+    });
+  };
+  const commitTitle = () => {
+    if (title.trim() && title.trim() !== p.title) onSave(p.id, {
+      title: title.trim()
+    });
+  };
+  const commitDescription = () => {
+    if (description !== (p.description || '')) onSave(p.id, {
+      description
+    });
+  };
+  const commitStock = (key, val) => {
+    const next = {
+      ...stock,
+      [key]: Math.max(0, parseInt(val, 10) || 0)
+    };
+    setStock(next);
+    onSave(p.id, {
+      stock: next
+    });
+  };
+  const addPhoto = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const blob = await resizeToFrame(file);
+      const path = `products/${Date.now()}-${slugify(p.title)}.jpg`;
+      const {
+        error: upErr
+      } = await window.sb.storage.from('product-images').upload(path, blob, {
+        contentType: 'image/jpeg'
+      });
+      if (upErr) throw upErr;
+      const url = window.sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+      const next = [...images, url];
+      setImages(next);
+      await onSave(p.id, {
+        images: next,
+        image_url: next[0]
+      });
+    } catch (err) {
+      alert(err.message || 'Error al subir la foto.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+  const removePhoto = async i => {
+    const next = images.filter((_, idx) => idx !== i);
+    setImages(next);
+    await onSave(p.id, {
+      images: next,
+      image_url: next[0] || null
+    });
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#fff',
+      border: 'var(--border-1)',
+      borderRadius: 'var(--radius-md)',
+      padding: '12px 16px',
+      opacity: p.active ? 1 : .5
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '56px 1.6fr 100px 1.4fr 90px 70px 70px',
+      gap: '14px',
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '48px',
+      height: '48px',
+      borderRadius: '10px',
+      background: images[0] ? `url(${images[0]}) center/cover` : 'var(--petalo)',
+      flexShrink: 0
+    }
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", {
+    style: {
+      fontSize: '.92rem',
+      display: 'block'
+    }
+  }, p.title), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '.78rem',
+      color: 'var(--ciruela-60)'
+    }
+  }, p.category)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("input", {
+    style: {
+      ...input,
+      padding: '7px 8px'
+    },
+    type: "number",
+    value: price,
+    onChange: e => setPrice(e.target.value),
+    onBlur: commitPrice
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: '8px',
+      flexWrap: 'wrap'
+    }
+  }, tones ? tones.map(t => /*#__PURE__*/React.createElement("label", {
+    key: t,
+    style: {
+      fontSize: '.78rem',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px'
+    }
+  }, t, ": ", /*#__PURE__*/React.createElement("input", {
+    style: {
+      width: '46px',
+      padding: '5px 6px',
+      borderRadius: '6px',
+      border: '1px solid rgba(62,34,51,.18)'
+    },
+    type: "number",
+    min: "0",
+    value: stock[t] ?? 0,
+    onChange: e => commitStock(t, e.target.value)
+  }))) : /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: '.78rem',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px'
+    }
+  }, "Stock: ", /*#__PURE__*/React.createElement("input", {
+    style: {
+      width: '54px',
+      padding: '5px 6px',
+      borderRadius: '6px',
+      border: '1px solid rgba(62,34,51,.18)'
+    },
+    type: "number",
+    min: "0",
+    value: stock._default ?? 0,
+    onChange: e => commitStock('_default', e.target.value)
+  }))), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: '.78rem',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      justifySelf: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: p.active,
+    onChange: e => onSave(p.id, {
+      active: e.target.checked
+    })
+  }), " Activo"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setExpanded(s => !s),
+    style: {
+      justifySelf: 'end',
+      background: 'none',
+      border: 'none',
+      color: 'var(--frambuesa)',
+      cursor: 'pointer',
+      fontSize: '.85rem',
+      fontWeight: 600
+    }
+  }, expanded ? 'Cerrar' : 'Editar'), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onDelete(p.id),
+    style: {
+      justifySelf: 'end',
+      background: 'none',
+      border: 'none',
+      color: '#B3261E',
+      cursor: 'pointer',
+      fontSize: '.85rem'
+    }
+  }, "Eliminar")), expanded && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: '16px',
+      paddingTop: '16px',
+      borderTop: '1px solid rgba(62,34,51,.1)',
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '14px'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: '.72rem',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: '.06em',
+      color: 'var(--ciruela-60)',
+      display: 'block',
+      marginBottom: '4px'
+    }
+  }, "Nombre del producto"), /*#__PURE__*/React.createElement("input", {
+    style: input,
+    value: title,
+    onChange: e => setTitle(e.target.value),
+    onBlur: commitTitle
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: '.72rem',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: '.06em',
+      color: 'var(--ciruela-60)',
+      display: 'block',
+      marginBottom: '4px'
+    }
+  }, "Descripci\xF3n corta"), /*#__PURE__*/React.createElement("input", {
+    style: input,
+    value: description,
+    onChange: e => setDescription(e.target.value),
+    onBlur: commitDescription
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      gridColumn: '1 / -1'
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: '.72rem',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: '.06em',
+      color: 'var(--ciruela-60)',
+      display: 'block',
+      marginBottom: '8px'
+    }
+  }, "Fotos (", images.length, ") \u2014 la primera es la principal"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: '10px',
+      flexWrap: 'wrap'
+    }
+  }, images.map((url, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      position: 'relative',
+      width: '76px',
+      height: '95px'
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: url,
+    style: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      borderRadius: '8px',
+      border: i === 0 ? '2px solid var(--frambuesa)' : 'var(--border-1)'
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => removePhoto(i),
+    style: {
+      position: 'absolute',
+      top: '-6px',
+      right: '-6px',
+      width: '22px',
+      height: '22px',
+      borderRadius: '50%',
+      border: 'none',
+      background: '#fff',
+      color: '#B3261E',
+      fontSize: '.75rem',
+      cursor: 'pointer',
+      boxShadow: '0 2px 6px rgba(62,34,51,.3)'
+    }
+  }, "\u2715"))), /*#__PURE__*/React.createElement("label", {
+    style: {
+      width: '76px',
+      height: '95px',
+      borderRadius: '8px',
+      border: '1.5px dashed rgba(62,34,51,.3)',
+      display: 'grid',
+      placeItems: 'center',
+      cursor: 'pointer',
+      fontSize: '.72rem',
+      color: 'var(--ciruela-60)',
+      textAlign: 'center'
+    }
+  }, uploading ? 'Subiendo…' : '+ Agregar', /*#__PURE__*/React.createElement("input", {
+    type: "file",
+    accept: "image/*",
+    onChange: addPhoto,
+    disabled: uploading,
+    style: {
+      display: 'none'
+    }
+  }))))));
+}
+function NewProductForm({
+  onDone
+}) {
+  const {
+    input,
+    card,
+    label,
+    resizeToFrame,
+    slugify,
+    CATEGORIES
+  } = window.__skyAdminShared;
+  const [category, setCategory] = React.useState(CATEGORIES[0]);
+  const [title, setTitle] = React.useState('');
+  const [description, setDescription] = React.useState('');
+  const [price, setPrice] = React.useState('');
+  const [tonesStr, setTonesStr] = React.useState('');
+  const [defaultStock, setDefaultStock] = React.useState('1');
+  const [file, setFile] = React.useState(null);
+  const [preview, setPreview] = React.useState(null);
+  const [saving, setSaving] = React.useState(false);
+  const [err, setErr] = React.useState('');
+  const onFile = e => {
+    const f = e.target.files[0];
+    setFile(f);
+    if (f) setPreview(URL.createObjectURL(f));
+  };
+  const submit = async e => {
+    e.preventDefault();
+    if (!title.trim() || !price) {
+      setErr('Completá al menos el nombre y el precio.');
+      return;
+    }
+    setSaving(true);
+    setErr('');
+    try {
+      let image_url = null;
+      if (file) {
+        const blob = await resizeToFrame(file);
+        const path = `products/${Date.now()}-${slugify(title)}.jpg`;
+        const {
+          error: upErr
+        } = await window.sb.storage.from('product-images').upload(path, blob, {
+          contentType: 'image/jpeg'
+        });
+        if (upErr) throw upErr;
+        image_url = window.sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+      }
+      const tones = tonesStr.trim() ? tonesStr.split(',').map(t => t.trim()).filter(Boolean) : null;
+      const stock = tones ? Object.fromEntries(tones.map(t => [t, parseInt(defaultStock, 10) || 0])) : {
+        _default: parseInt(defaultStock, 10) || 0
+      };
+      const {
+        error
+      } = await window.sb.from('products').insert({
+        category,
+        title: title.trim(),
+        description: description.trim(),
+        price: Number(price),
+        image_url,
+        images: image_url ? [image_url] : null,
+        tones,
+        stock,
+        active: true
+      });
+      if (error) throw error;
+      onDone();
+    } catch (e2) {
+      setErr(e2.message || 'Error al guardar.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  return /*#__PURE__*/React.createElement("form", {
+    onSubmit: submit,
+    style: {
+      ...card,
+      marginBottom: '24px',
+      display: 'grid',
+      gridTemplateColumns: '160px 1fr',
+      gap: '18px'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: label
+  }, "Foto"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '140px',
+      height: '175px',
+      borderRadius: 'var(--radius-md)',
+      background: preview ? `url(${preview}) center/contain no-repeat, var(--petalo)` : 'var(--petalo)',
+      border: 'var(--border-1)',
+      marginBottom: '8px'
+    }
+  }), /*#__PURE__*/React.createElement("input", {
+    type: "file",
+    accept: "image/*",
+    onChange: onFile,
+    style: {
+      fontSize: '.78rem'
+    }
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '.72rem',
+      color: 'var(--ciruela-60)',
+      margin: '6px 0 0'
+    }
+  }, "Se recorta y acomoda sola al recuadro.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '14px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      gridColumn: '1 / -1'
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: label
+  }, "Nombre del producto"), /*#__PURE__*/React.createElement("input", {
+    style: input,
+    value: title,
+    onChange: e => setTitle(e.target.value),
+    required: true
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: label
+  }, "Categor\xEDa"), /*#__PURE__*/React.createElement("select", {
+    style: input,
+    value: category,
+    onChange: e => setCategory(e.target.value)
+  }, CATEGORIES.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c,
+    value: c
+  }, c)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: label
+  }, "Precio ($)"), /*#__PURE__*/React.createElement("input", {
+    style: input,
+    type: "number",
+    value: price,
+    onChange: e => setPrice(e.target.value),
+    required: true
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      gridColumn: '1 / -1'
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: label
+  }, "Descripci\xF3n corta"), /*#__PURE__*/React.createElement("input", {
+    style: input,
+    value: description,
+    onChange: e => setDescription(e.target.value)
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: label
+  }, "Tonos (opcional, separados por coma)"), /*#__PURE__*/React.createElement("input", {
+    style: input,
+    placeholder: "01, 05",
+    value: tonesStr,
+    onChange: e => setTonesStr(e.target.value)
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: label
+  }, "Stock ", tonesStr.trim() ? '(por cada tono)' : ''), /*#__PURE__*/React.createElement("input", {
+    style: input,
+    type: "number",
+    min: "0",
+    value: defaultStock,
+    onChange: e => setDefaultStock(e.target.value)
+  })), err && /*#__PURE__*/React.createElement("p", {
+    style: {
+      gridColumn: '1 / -1',
+      color: '#B3261E',
+      fontSize: '.85rem',
+      margin: 0
+    }
+  }, err), /*#__PURE__*/React.createElement("div", {
+    style: {
+      gridColumn: '1 / -1'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    disabled: saving,
+    style: {
+      padding: '11px 22px',
+      borderRadius: '999px',
+      border: 'none',
+      background: 'var(--frambuesa)',
+      color: '#fff',
+      fontWeight: 600,
+      cursor: 'pointer',
+      opacity: saving ? .6 : 1
+    }
+  }, saving ? 'Guardando…' : 'Guardar producto'))));
+}
+window.ProductsTab = ProductsTab;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/admin/ProductsTab.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/admin/SalesTab.jsx
+try { (() => {
+/* Sky Makeup — Admin: pestaña Ventas. Registro simple de pedidos pagados. */
+function SalesTab() {
+  const {
+    fmtMoney,
+    card
+  } = window.__skyAdminShared;
+  const [orders, setOrders] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  React.useEffect(() => {
+    window.sb.from('orders').select('*').eq('status', 'paid').order('created_at', {
+      ascending: false
+    }).then(({
+      data,
+      error
+    }) => {
+      if (!error) setOrders(data || []);
+      setLoading(false);
+    });
+  }, []);
+  const total = orders.reduce((s, o) => s + Number(o.total), 0);
+  const now = new Date();
+  const thisMonth = orders.filter(o => {
+    const d = new Date(o.created_at);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const totalMonth = thisMonth.reduce((s, o) => s + Number(o.total), 0);
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 400,
+      fontSize: '1.4rem',
+      margin: '0 0 18px'
+    }
+  }, "Ventas"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))',
+      gap: '16px',
+      marginBottom: '26px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: card
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '.75rem',
+      color: 'var(--ciruela-60)',
+      textTransform: 'uppercase',
+      letterSpacing: '.06em',
+      marginBottom: '4px'
+    }
+  }, "Total hist\xF3rico"), /*#__PURE__*/React.createElement("b", {
+    style: {
+      fontSize: '1.6rem',
+      fontFamily: 'var(--font-display)',
+      fontWeight: 400
+    }
+  }, fmtMoney(total))), /*#__PURE__*/React.createElement("div", {
+    style: card
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '.75rem',
+      color: 'var(--ciruela-60)',
+      textTransform: 'uppercase',
+      letterSpacing: '.06em',
+      marginBottom: '4px'
+    }
+  }, "Este mes"), /*#__PURE__*/React.createElement("b", {
+    style: {
+      fontSize: '1.6rem',
+      fontFamily: 'var(--font-display)',
+      fontWeight: 400
+    }
+  }, fmtMoney(totalMonth))), /*#__PURE__*/React.createElement("div", {
+    style: card
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '.75rem',
+      color: 'var(--ciruela-60)',
+      textTransform: 'uppercase',
+      letterSpacing: '.06em',
+      marginBottom: '4px'
+    }
+  }, "Pedidos pagados"), /*#__PURE__*/React.createElement("b", {
+    style: {
+      fontSize: '1.6rem',
+      fontFamily: 'var(--font-display)',
+      fontWeight: 400
+    }
+  }, orders.length))), loading ? /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: 'var(--ciruela-60)'
+    }
+  }, "Cargando\u2026") : orders.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: 'var(--ciruela-60)'
+    }
+  }, "Todav\xEDa no hay ventas confirmadas.") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px'
+    }
+  }, orders.map(o => /*#__PURE__*/React.createElement("div", {
+    key: o.id,
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      background: '#fff',
+      border: 'var(--border-1)',
+      borderRadius: 'var(--radius-md)',
+      padding: '12px 18px'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", {
+    style: {
+      fontSize: '.92rem'
+    }
+  }, o.customer_name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '.78rem',
+      color: 'var(--ciruela-60)'
+    }
+  }, new Date(o.created_at).toLocaleDateString('es-AR'), " \xB7 ", (o.items || []).length, " producto(s)")), /*#__PURE__*/React.createElement("b", null, fmtMoney(o.total))))));
+}
+window.SalesTab = SalesTab;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/admin/SalesTab.jsx", error: String((e && e.message) || e) }); }
+
 // ui_kits/storefront/CartDrawer.jsx
 try { (() => {
 /* Sky Makeup storefront — slide-in cart drawer.
@@ -572,6 +2159,17 @@ const BANK = {
   cbu: '1430001713039417410016',
   cuenta: '1303941741001'
 };
+const inputStyle = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '12px 14px',
+  borderRadius: 'var(--radius-md)',
+  border: 'var(--border-1)',
+  fontSize: '.95rem',
+  fontFamily: 'var(--font-body)',
+  color: 'var(--ciruela)',
+  background: '#fff'
+};
 function CartDrawer({
   open,
   items,
@@ -585,6 +2183,21 @@ function CartDrawer({
   const fmt = n => '$' + n.toLocaleString('es-AR');
   const entries = Object.entries(items);
   const [step, setStep] = React.useState('cart');
+  const [name, setName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [sending, setSending] = React.useState(false);
+  const canContinue = entries.length > 0 && name.trim().length > 1 && phone.trim().length > 5;
+  const finalizeAndSend = async () => {
+    setSending(true);
+    try {
+      await onFinalize({
+        name: name.trim(),
+        phone: phone.trim()
+      });
+    } finally {
+      setSending(false);
+    }
+  };
 
   // Al cerrar el carrito o vaciarlo, volvemos al paso 1.
   React.useEffect(() => {
@@ -714,9 +2327,26 @@ function CartDrawer({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
+      flexDirection: 'column',
+      gap: '10px',
+      marginTop: '4px'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: name,
+    onChange: e => setName(e.target.value),
+    placeholder: "Nombre y apellido",
+    style: inputStyle
+  }), /*#__PURE__*/React.createElement("input", {
+    value: phone,
+    onChange: e => setPhone(e.target.value),
+    placeholder: "Tu n\xFAmero de WhatsApp",
+    style: inputStyle
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
       justifyContent: 'space-between',
       fontSize: '1.1rem',
-      marginBottom: '6px'
+      margin: '14px 0 6px'
     }
   }, /*#__PURE__*/React.createElement("span", null, "Total"), /*#__PURE__*/React.createElement("b", {
     style: {
@@ -730,10 +2360,10 @@ function CartDrawer({
     }
   }, "El env\xEDo no est\xE1 incluido. Coordinamos el costo por WhatsApp al finalizar la compra."), /*#__PURE__*/React.createElement(SkyButton, {
     onClick: () => setStep('payment'),
-    disabled: entries.length === 0,
+    disabled: !canContinue,
     style: {
       width: '100%',
-      ...(entries.length === 0 ? {
+      ...(!canContinue ? {
         pointerEvents: 'none',
         opacity: .5
       } : {})
@@ -834,11 +2464,15 @@ function CartDrawer({
     href: comprobanteHref,
     target: "_blank",
     rel: "noopener noreferrer",
-    onClick: onFinalize,
+    onClick: finalizeAndSend,
     style: {
-      width: '100%'
+      width: '100%',
+      ...(sending ? {
+        pointerEvents: 'none',
+        opacity: .6
+      } : {})
     }
-  }, "Enviar comprobante por WhatsApp \uD83D\uDECD\uFE0F"), /*#__PURE__*/React.createElement(SkyButton, {
+  }, sending ? 'Enviando…' : 'Enviar comprobante por WhatsApp 🛍️'), /*#__PURE__*/React.createElement(SkyButton, {
     variant: "ghost",
     onClick: () => setStep('cart'),
     style: {
@@ -962,235 +2596,14 @@ const {
   StepCard,
   TrustItem
 } = SK;
-const PRODUCTS = [
-// Rostro
-{
-  category: 'Rostro',
-  title: 'Polvo compacto Rimera Quince tono 03',
-  description: 'Acabado mate que sella tu base y controla brillos todo el día.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 4,
-  image: '../../assets/products/framed/polvo-rimera-quince-03.jpeg'
-}, {
-  category: 'Rostro',
-  title: 'Base Pink 21 tono 01',
-  description: 'Cobertura media y textura liviana, ideal para el día a día.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 5
-}, {
-  category: 'Rostro',
-  title: 'Rubor en polvo Ushas',
-  description: 'Color natural y fácil de difuminar. Elegí tu tono.',
-  price: '$2.500',
-  raw: 2500,
-  swatch: 3,
-  tones: ['04', '05'],
-  image: '../../assets/products/framed/rubor-ushas.jpeg'
-}, {
-  category: 'Rostro',
-  title: 'Base Ruby Rose tono 03',
-  description: 'Cobertura alta con acabado luminoso.',
-  price: '$4.500',
-  raw: 4500,
-  swatch: 5,
-  badge: 'Más vendido'
-}, {
-  category: 'Rostro',
-  title: 'Base Huda tono 220',
-  description: 'Acabado natural de larga duración.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 3
-}, {
-  category: 'Rostro',
-  title: 'Corrector',
-  description: 'Cubre ojeras e imperfecciones sin marcar líneas. Elegí tu tono.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 4,
-  tones: ['02', '03'],
-  image: '../../assets/products/framed/corrector.jpeg'
-}, {
-  category: 'Rostro',
-  title: 'Set de esponjas x7',
-  description: 'Set completo para aplicar base, corrector y polvo como una pro.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 3,
-  image: '../../assets/products/framed/set-esponjas-x7.jpeg'
-},
-// Labiales
-{
-  category: 'Labiales',
-  title: 'Gloss Pink 21',
-  description: 'Brillo espejado sin sensación pegajosa. Elegí tu tono.',
-  price: '$3.200',
-  raw: 3200,
-  swatch: 1,
-  badge: 'Más vendido',
-  tones: ['01', '05'],
-  image: '../../assets/products/framed/gloss-pink21.jpeg'
-}, {
-  category: 'Labiales',
-  title: 'Gloss Mely tono 05',
-  description: 'Hidrata y da brillo con un toque de color.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 1,
-  image: '../../assets/products/framed/gloss-mely-05.jpeg'
-}, {
-  category: 'Labiales',
-  title: 'Labial matte Pink 21 tono 03',
-  description: 'Acabado mate aterciopelado de larga duración.',
-  price: '$2.500',
-  raw: 2500,
-  swatch: 6,
-  image: '../../assets/products/framed/labial-matte-pink21-03.jpeg'
-}, {
-  category: 'Labiales',
-  title: 'Labial matte y gloss 2 en 1 Laurenza',
-  description: 'Dos acabados en un solo producto: mate de un lado, gloss del otro.',
-  price: '$3.800',
-  raw: 3800,
-  swatch: 1,
-  image: '../../assets/products/framed/labial-gloss-laurenza.jpeg'
-}, {
-  category: 'Labiales',
-  title: 'Labial matte Mely tono 03',
-  description: 'Color intenso con acabado mate parejo.',
-  price: '$2.800',
-  raw: 2800,
-  swatch: 6,
-  image: '../../assets/products/framed/labial-matte-mely-03.jpeg'
-}, {
-  category: 'Labiales',
-  title: 'Lip gloss matte Mely 03',
-  description: 'Brillo suave con acabado aterciopelado, no pegajoso.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 1,
-  image: '../../assets/products/framed/lip-gloss-mely-03.jpeg'
-}, {
-  category: 'Labiales',
-  title: 'Gloss Tei tono 03',
-  description: 'Brillo jugoso para looks del día a día.',
-  price: '$2.500',
-  raw: 2500,
-  swatch: 6
-}, {
-  category: 'Labiales',
-  title: 'Labial matte Tei tono 03',
-  description: 'Mate cómodo que no reseca.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 1,
-  image: '../../assets/products/framed/labial-matte-tei-03.jpeg'
-}, {
-  category: 'Labiales',
-  title: 'Labial matte en barra Ushas tono 02',
-  description: 'Color parejo en una sola pasada.',
-  price: '$2.500',
-  raw: 2500,
-  swatch: 6,
-  image: '../../assets/products/framed/labial-barra-ushas-02.jpeg'
-}, {
-  category: 'Labiales',
-  title: 'Delineador de labios',
-  description: 'Define el contorno y hace durar más tu labial.',
-  price: '$1.500',
-  raw: 1500,
-  swatch: 1
-}, {
-  category: 'Labiales',
-  title: 'Labial matte Tei',
-  description: 'Mate cómodo que no reseca, color parejo en un solo paso.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 6,
-  image: '../../assets/products/framed/labial-matte-tei.jpeg'
-},
-// Máscaras y Delineadores
-{
-  category: 'Máscaras y Delineadores',
-  title: 'Arqueador',
-  description: 'Fija y da forma a tus cejas todo el día.',
-  price: '$3.200',
-  raw: 3200,
-  swatch: 2,
-  image: '../../assets/products/framed/arqueador.jpeg'
-}, {
-  category: 'Máscaras y Delineadores',
-  title: 'Paleta de sombras Pink 21',
-  description: 'Tonos combinables para looks naturales o más intensos.',
-  price: '$5.000',
-  raw: 5000,
-  swatch: 2,
-  badge: 'Nuevo',
-  image: '../../assets/products/framed/paleta-pink21.jpeg'
-}, {
-  category: 'Máscaras y Delineadores',
-  title: 'Máscara de pestañas Pink 21',
-  description: 'Volumen y largo sin grumos.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 2,
-  image: '../../assets/products/framed/mascara-pink21.jpeg'
-}, {
-  category: 'Máscaras y Delineadores',
-  title: 'Máscara de pestañas mini Tango',
-  description: 'Formato mini, ideal para retocar en la cartera.',
-  price: '$3.000',
-  raw: 3000,
-  swatch: 2,
-  image: '../../assets/products/framed/mascara-mini-tango.jpeg'
-}, {
-  category: 'Máscaras y Delineadores',
-  title: 'Delineador en fibra líquido NAEZ',
-  description: 'Punta de fibra ultrafina para un trazo preciso y parejo.',
-  price: '$2.000',
-  raw: 2000,
-  swatch: 2,
-  image: '../../assets/products/framed/delineador-fibra-naez.jpeg'
-}, {
-  category: 'Máscaras y Delineadores',
-  title: 'Delineador líquido Ruby Rose',
-  description: 'Negro intenso y secado rápido para un cat-eye bien definido.',
-  price: '$4.000',
-  raw: 4000,
-  swatch: 2
-},
-// Pestañas y Pegamentos
-{
-  category: 'Pestañas y Pegamentos',
-  title: 'Sellador + Bonder',
-  description: 'Fija tus pestañas y sella el pegamento para que duren muchísimo más.',
-  price: '$5.500',
-  raw: 5500,
-  swatch: 2,
-  image: '../../assets/products/framed/sellador-bonder.jpeg'
-}, {
-  category: 'Pestañas y Pegamentos',
-  title: 'Pestañas en grupo 40D+50D 0.07D MIX NAEZ',
-  description: 'Pestañas en grupo, mix 40D y 50D con curva D 0.07, para volumen a medida.',
-  price: '$6.800',
-  raw: 6800,
-  swatch: 2,
-  badge: 'Nuevo'
-}];
 const PRODUCT_CATEGORY_ORDER = ['Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos'];
 
 // ---- Stock ----
-// Por defecto 1 unidad por producto (y por tono en los que tienen variantes).
-// Para cargar stock real después, agregá overrides acá:
-//   'Base Huda tono 220': 3            (producto sin tonos)
-//   'Rubor en polvo Ushas·04': 2       (producto con tonos → título·tono)
-const DEFAULT_STOCK = 1;
-const STOCK_OVERRIDES = {};
+// El stock ahora vive en la base de datos (tabla products.stock, jsonb).
+// stockFor lee el jsonb cargado por producto: { _default: n } o { tono: n }.
 const stockFor = (p, tone) => {
-  const k = tone ? `${p.title}·${tone}` : p.title;
-  return STOCK_OVERRIDES[k] != null ? STOCK_OVERRIDES[k] : DEFAULT_STOCK;
+  const k = tone || '_default';
+  return p.stock && p.stock[k] != null ? p.stock[k] : 0;
 };
 
 // ⚠️ REEMPLAZAR con el número real de WhatsApp (formato internacional sin +, sin espacios).
@@ -1248,6 +2661,8 @@ const subP = {
   color: 'var(--ciruela-60)'
 };
 function Storefront() {
+  const [products, setProducts] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
   const [cart, setCart] = React.useState(() => {
     try {
       const saved = localStorage.getItem('sky_cart');
@@ -1257,31 +2672,49 @@ function Storefront() {
     }
   });
   const [open, setOpen] = React.useState(false);
-  const [sold, setSold] = React.useState(() => {
-    try {
-      const saved = localStorage.getItem('sky_sold');
-      return saved ? JSON.parse(saved) : {};
-    } catch (e) {
-      return {};
-    }
-  });
+  React.useEffect(() => {
+    let cancelled = false;
+    window.sb.from('products').select('*').eq('active', true).order('sort_order').then(({
+      data,
+      error
+    }) => {
+      if (cancelled) return;
+      if (error) {
+        console.error(error);
+        setLoading(false);
+        return;
+      }
+      const mapped = (data || []).map(row => ({
+        id: row.id,
+        category: row.category,
+        title: row.title,
+        description: row.description,
+        price: '$' + Number(row.price).toLocaleString('es-AR'),
+        raw: Number(row.price),
+        image: row.image_url,
+        images: row.images && row.images.length ? row.images : row.image_url ? [row.image_url] : undefined,
+        fit: row.image_url ? 'contain' : undefined,
+        badge: row.badge,
+        tones: row.tones,
+        stock: row.stock
+      }));
+      setProducts(mapped);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   React.useEffect(() => {
     try {
       localStorage.setItem('sky_cart', JSON.stringify(cart));
     } catch (e) {}
   }, [cart]);
-  React.useEffect(() => {
-    try {
-      localStorage.setItem('sky_sold', JSON.stringify(sold));
-    } catch (e) {}
-  }, [sold]);
   const cartKey = (p, tone) => tone ? `${p.title} · Tono ${tone}` : p.title;
-  // Stock disponible = stock total − ya vendidos (confirmados).
-  const availStock = (p, tone) => stockFor(p, tone) - (sold[cartKey(p, tone)] || 0);
-  const remainingFor = (p, tone) => availStock(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
+  const remainingFor = (p, tone) => stockFor(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
   const add = (p, tone) => {
     const key = cartKey(p, tone);
-    const stock = availStock(p, tone);
+    const stock = stockFor(p, tone);
     setCart(c => {
       const have = c[key]?.qty || 0;
       if (have >= stock) return c; // sin stock
@@ -1291,7 +2724,9 @@ function Storefront() {
       next[key] = {
         price: p.raw,
         qty: have + 1,
-        stock
+        stock,
+        productId: p.id,
+        tone: tone || null
       };
       return next;
     });
@@ -1319,15 +2754,36 @@ function Storefront() {
     return next;
   });
 
-  // Al enviar el comprobante: descuenta el stock (vendidos), vacía el carrito y lo cierra.
-  const finalize = () => {
-    setSold(s => {
-      const next = {
-        ...s
-      };
-      for (const [name, item] of Object.entries(cart)) next[name] = (next[name] || 0) + item.qty;
-      return next;
+  // Al enviar el comprobante: guarda el pedido en la base, descuenta stock real,
+  // vacía el carrito y cierra.
+  const finalize = async ({
+    name,
+    phone
+  }) => {
+    const items = Object.entries(cart).map(([label, item]) => ({
+      title: label,
+      qty: item.qty,
+      price: item.price,
+      productId: item.productId,
+      tone: item.tone
+    }));
+    const total = Object.values(cart).reduce((s, i) => s + i.qty * i.price, 0);
+    await window.sb.from('orders').insert({
+      customer_name: name,
+      customer_phone: phone,
+      items,
+      total,
+      status: 'pending'
     });
+    for (const item of Object.values(cart)) {
+      if (item.productId) {
+        await window.sb.rpc('decrement_stock', {
+          p_id: item.productId,
+          p_tone: item.tone,
+          p_qty: item.qty
+        });
+      }
+    }
     setCart({});
     setOpen(false);
   };
@@ -1393,13 +2849,16 @@ function Storefront() {
     }
   }, /*#__PURE__*/React.createElement("a", {
     href: "#categorias",
-    style: navLink
+    style: navLink,
+    className: "sky-nav-link"
   }, "Categor\xEDas"), /*#__PURE__*/React.createElement("a", {
     href: "#productos",
-    style: navLink
+    style: navLink,
+    className: "sky-nav-link"
   }, "Productos"), /*#__PURE__*/React.createElement("a", {
     href: "#como-comprar",
-    style: navLink
+    style: navLink,
+    className: "sky-nav-link"
   }, "C\xF3mo comprar"), /*#__PURE__*/React.createElement(Button, {
     size: "sm",
     href: waLink(GENERIC_WA_MSG),
@@ -1512,12 +2971,17 @@ function Storefront() {
       gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))',
       gap: '22px'
     }
-  }, PRODUCTS.filter(p => p.category === cat).map(p => /*#__PURE__*/React.createElement(ProductCard, _extends({
-    key: p.title
+  }, products.filter(p => p.category === cat).map(p => /*#__PURE__*/React.createElement(ProductCard, _extends({
+    key: p.id
   }, p, {
     onAdd: tone => add(p, tone),
     getRemaining: tone => remainingFor(p, tone)
-  })))))), /*#__PURE__*/React.createElement("p", {
+  })))))), loading && /*#__PURE__*/React.createElement("p", {
+    style: {
+      textAlign: 'center',
+      color: 'var(--ciruela-60)'
+    }
+  }, "Cargando cat\xE1logo\u2026"), /*#__PURE__*/React.createElement("p", {
     style: {
       marginTop: '10px',
       fontSize: '.88rem',
@@ -1674,7 +3138,7 @@ function Storefront() {
       fontStyle: 'normal',
       color: 'var(--chicle)'
     }
-  }, "Makeup")), /*#__PURE__*/React.createElement("span", null, "Santa Fe, Argentina \xB7 Skincare & Makeup"), /*#__PURE__*/React.createElement("a", {
+  }, "Makeup")), /*#__PURE__*/React.createElement("span", null, "San Jer\xF3nimo 4759, Santa Fe \xB7 Skincare & Makeup"), /*#__PURE__*/React.createElement("a", {
     href: INSTAGRAM_URL,
     target: "_blank",
     rel: "noopener noreferrer",
@@ -1737,6 +3201,300 @@ const navLink = {
 };
 window.Storefront = Storefront;
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/storefront/Storefront.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/storefront/seed-products.js
+try { (() => {
+/* Sky Makeup — datos de los 30 productos actuales, para la carga inicial (seed) a Supabase.
+   Las imágenes apuntan al dominio ya publicado (no hace falta resubirlas). */
+const IMG_BASE = 'https://skymakeup.mitsistemas.com.ar/assets/products/framed/';
+const SEED_PRODUCTS = [
+// Rostro
+{
+  category: 'Rostro',
+  title: 'Polvo compacto Rimera Quince tono 03',
+  description: 'Acabado mate que sella tu base y controla brillos todo el día.',
+  price: 3000,
+  image_url: IMG_BASE + 'polvo-rimera-quince-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Base Pink 21 tono 01',
+  description: 'Cobertura media y textura liviana, ideal para el día a día.',
+  price: 3000,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Rubor en polvo Ushas',
+  description: 'Color natural y fácil de difuminar. Elegí tu tono.',
+  price: 2500,
+  image_url: IMG_BASE + 'rubor-ushas.jpeg',
+  tones: ['04', '05'],
+  stock: {
+    '04': 1,
+    '05': 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Base Ruby Rose tono 03',
+  description: 'Cobertura alta con acabado luminoso.',
+  price: 4500,
+  image_url: null,
+  tones: null,
+  badge: 'Más vendido',
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Base Huda tono 220',
+  description: 'Acabado natural de larga duración.',
+  price: 3000,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Corrector',
+  description: 'Cubre ojeras e imperfecciones sin marcar líneas. Elegí tu tono.',
+  price: 3000,
+  image_url: IMG_BASE + 'corrector.jpeg',
+  tones: ['02', '03'],
+  stock: {
+    '02': 1,
+    '03': 1
+  }
+}, {
+  category: 'Rostro',
+  title: 'Set de esponjas x7',
+  description: 'Set completo para aplicar base, corrector y polvo como una pro.',
+  price: 3000,
+  image_url: IMG_BASE + 'set-esponjas-x7.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+},
+// Labiales
+{
+  category: 'Labiales',
+  title: 'Gloss Pink 21',
+  description: 'Brillo espejado sin sensación pegajosa. Elegí tu tono.',
+  price: 3200,
+  image_url: IMG_BASE + 'gloss-pink21.jpeg',
+  tones: ['01', '05'],
+  badge: 'Más vendido',
+  stock: {
+    '01': 1,
+    '05': 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Gloss Mely tono 05',
+  description: 'Hidrata y da brillo con un toque de color.',
+  price: 3000,
+  image_url: IMG_BASE + 'gloss-mely-05.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte Pink 21 tono 03',
+  description: 'Acabado mate aterciopelado de larga duración.',
+  price: 2500,
+  image_url: IMG_BASE + 'labial-matte-pink21-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte y gloss 2 en 1 Laurenza',
+  description: 'Dos acabados en un solo producto: mate de un lado, gloss del otro.',
+  price: 3800,
+  image_url: IMG_BASE + 'labial-gloss-laurenza.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte Mely tono 03',
+  description: 'Color intenso con acabado mate parejo.',
+  price: 2800,
+  image_url: IMG_BASE + 'labial-matte-mely-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Lip gloss matte Mely 03',
+  description: 'Brillo suave con acabado aterciopelado, no pegajoso.',
+  price: 3000,
+  image_url: IMG_BASE + 'lip-gloss-mely-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Gloss Tei tono 03',
+  description: 'Brillo jugoso para looks del día a día.',
+  price: 2500,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte Tei tono 03',
+  description: 'Mate cómodo que no reseca.',
+  price: 3000,
+  image_url: IMG_BASE + 'labial-matte-tei-03.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte en barra Ushas tono 02',
+  description: 'Color parejo en una sola pasada.',
+  price: 2500,
+  image_url: IMG_BASE + 'labial-barra-ushas-02.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Delineador de labios',
+  description: 'Define el contorno y hace durar más tu labial.',
+  price: 1500,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Labiales',
+  title: 'Labial matte Tei',
+  description: 'Mate cómodo que no reseca, color parejo en un solo paso.',
+  price: 3000,
+  image_url: IMG_BASE + 'labial-matte-tei.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+},
+// Máscaras y Delineadores
+{
+  category: 'Máscaras y Delineadores',
+  title: 'Arqueador',
+  description: 'Fija y da forma a tus cejas todo el día.',
+  price: 3200,
+  image_url: IMG_BASE + 'arqueador.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Paleta de sombras Pink 21',
+  description: 'Tonos combinables para looks naturales o más intensos.',
+  price: 5000,
+  image_url: IMG_BASE + 'paleta-pink21.jpeg',
+  tones: null,
+  badge: 'Nuevo',
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Máscara de pestañas Pink 21',
+  description: 'Volumen y largo sin grumos.',
+  price: 3000,
+  image_url: IMG_BASE + 'mascara-pink21.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Máscara de pestañas mini Tango',
+  description: 'Formato mini, ideal para retocar en la cartera.',
+  price: 3000,
+  image_url: IMG_BASE + 'mascara-mini-tango.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Delineador en fibra líquido NAEZ',
+  description: 'Punta de fibra ultrafina para un trazo preciso y parejo.',
+  price: 2000,
+  image_url: IMG_BASE + 'delineador-fibra-naez.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Máscaras y Delineadores',
+  title: 'Delineador líquido Ruby Rose',
+  description: 'Negro intenso y secado rápido para un cat-eye bien definido.',
+  price: 4000,
+  image_url: null,
+  tones: null,
+  stock: {
+    _default: 1
+  }
+},
+// Pestañas y Pegamentos
+{
+  category: 'Pestañas y Pegamentos',
+  title: 'Sellador + Bonder',
+  description: 'Fija tus pestañas y sella el pegamento para que duren muchísimo más.',
+  price: 5500,
+  image_url: IMG_BASE + 'sellador-bonder.jpeg',
+  tones: null,
+  stock: {
+    _default: 1
+  }
+}, {
+  category: 'Pestañas y Pegamentos',
+  title: 'Pestañas en grupo 40D+50D 0.07D MIX NAEZ',
+  description: 'Pestañas en grupo, mix 40D y 50D con curva D 0.07, para volumen a medida.',
+  price: 6800,
+  image_url: null,
+  tones: null,
+  badge: 'Nuevo',
+  stock: {
+    _default: 1
+  }
+}];
+SEED_PRODUCTS.forEach((p, i) => {
+  p.sort_order = i;
+});
+window.SEED_PRODUCTS = SEED_PRODUCTS;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/storefront/seed-products.js", error: String((e && e.message) || e) }); }
+
+// ui_kits/storefront/supabase-client.js
+try { (() => {
+/* Sky Makeup — cliente Supabase compartido (storefront + admin).
+   Cargar despu\u00e9s de la librer\u00eda supabase-js v2 vía CDN. */
+window.sb = supabase.createClient('https://bohthswmsvcllowhmtgd.supabase.co', 'sb_publishable_C0QY7naaRdtZYvg4ei8ytQ_h65-piuW');
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/storefront/supabase-client.js", error: String((e && e.message) || e) }); }
 
 __ds_ns.Badge = __ds_scope.Badge;
 

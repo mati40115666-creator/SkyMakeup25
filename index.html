@@ -93,13 +93,11 @@
     .sky-categories > a:last-child{grid-column:1 / span 2; width:min(100%,220px); justify-self:center;}
   }
 
-  /* Header responsive: en mobile ocultamos los links y dejamos logo + CTA. */
+  /* Header responsive: en mobile ocultamos los links y mostramos el men\u00fa hamburguesa. */
+  .sky-menu-btn{display:none; place-items:center;}
   @media (max-width:720px){
     .sky-nav-link{display:none;}
-    header nav a.sky-btn{padding:9px 16px !important; font-size:.82rem !important;}
-  }
-  @media (max-width:380px){
-    header nav a.sky-btn{padding:8px 12px !important; font-size:.76rem !important;}
+    .sky-menu-btn{display:grid;}
   }
 </style>
 </head>
@@ -388,6 +386,9 @@ function Storefront() {
     } catch (e) { return {}; }
   });
   const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -402,6 +403,7 @@ function Storefront() {
         price: '$' + Number(row.price).toLocaleString('es-AR'),
         raw: Number(row.price),
         image: row.image_url,
+        images: (row.images && row.images.length) ? row.images : (row.image_url ? [row.image_url] : undefined),
         fit: row.image_url ? 'contain' : undefined,
         badge: row.badge,
         tones: row.tones,
@@ -476,13 +478,34 @@ function Storefront() {
       <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,243,247,.88)', backdropFilter: 'blur(12px)', borderBottom: 'var(--border-1)' }}>
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '68px' }}>
           <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'var(--font-display)', fontSize: '1.45rem', textDecoration: 'none', color: 'inherit', letterSpacing: '.01em' }}><span style={{ width: '52px', height: '52px', borderRadius: '50%', border: '1px solid rgba(242,107,165,.54)', background: 'url(assets/logo.jpg) center / contain no-repeat', display: 'block', flexShrink: 0 }} />Sky <em style={{ fontStyle: 'normal', color: 'var(--frambuesa)' }}>Makeup</em></a>
-          <nav style={{ display: 'flex', gap: '26px', alignItems: 'center' }}>
-            <a href="#categorias" style={navLink} className="sky-nav-link">Categorías</a>
-            <a href="#productos" style={navLink} className="sky-nav-link">Productos</a>
-            <a href="#como-comprar" style={navLink} className="sky-nav-link">Cómo comprar</a>
-            <Button size="sm" href={waLink(GENERIC_WA_MSG)} target="_blank" rel="noopener noreferrer">Pedir por WhatsApp</Button>
-          </nav>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <nav style={{ display: 'flex', gap: '26px', alignItems: 'center' }}>
+              <a href="#categorias" style={navLink} className="sky-nav-link">Categorías</a>
+              <a href="#productos" style={navLink} className="sky-nav-link">Productos</a>
+              <a href="#como-comprar" style={navLink} className="sky-nav-link">Cómo comprar</a>
+            </nav>
+            <button onClick={() => setSearchOpen((s) => !s)} aria-label="Buscar productos" style={{ ...iconBtnStyle(searchOpen), display: 'grid' }}>🔍</button>
+            <button onClick={() => setMenuOpen((s) => !s)} aria-label="Menú" className="sky-menu-btn" style={iconBtnStyle(menuOpen)}>☰</button>
+          </div>
         </div>
+        {searchOpen && (
+          <div style={{ ...wrap, paddingBottom: '14px' }}>
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar producto por nombre…"
+              style={{ width: '100%', maxWidth: '420px', padding: '10px 16px', borderRadius: 'var(--radius-pill)', border: 'var(--border-1)', fontSize: '.92rem', fontFamily: 'var(--font-body)', color: 'var(--ciruela)', background: '#fff' }}
+            />
+          </div>
+        )}
+        {menuOpen && (
+          <nav className="sky-mobile-menu" style={{ ...wrap, display: 'flex', flexDirection: 'column', paddingBottom: '14px' }}>
+            <a href="#categorias" onClick={() => setMenuOpen(false)} style={mobileMenuLink}>Categorías</a>
+            <a href="#productos" onClick={() => setMenuOpen(false)} style={mobileMenuLink}>Productos</a>
+            <a href="#como-comprar" onClick={() => setMenuOpen(false)} style={mobileMenuLink}>Cómo comprar</a>
+          </nav>
+        )}
       </header>
 
       {/* Hero */}
@@ -526,14 +549,32 @@ function Storefront() {
             <h2 style={h2}>Lo que se está pidiendo</h2>
             <p style={subP}>Stock real, precios directos. Si te gusta, escribinos y te lo reservamos.</p>
           </div>
-          {PRODUCT_CATEGORY_ORDER.map((cat) => (
-            <div key={cat} id={CATEGORY_ANCHORS[cat]} style={{ marginBottom: '46px', scrollMarginTop: '84px' }}>
-              <h3 style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '.85rem', letterSpacing: 'var(--tracking-tag)', textTransform: 'uppercase', color: 'var(--chicle)', marginBottom: '18px' }}>{cat}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '22px' }}>
-                {products.filter((p) => p.category === cat).map((p) => <ProductCard key={p.id} {...p} onAdd={(tone) => add(p, tone)} getRemaining={(tone) => remainingFor(p, tone)} />)}
+          {(() => {
+            const term = search.trim().toLowerCase();
+            if (term) {
+              const matches = products.filter((p) => p.title.toLowerCase().includes(term));
+              return (
+                <div style={{ marginBottom: '46px' }}>
+                  <h3 style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '.85rem', letterSpacing: 'var(--tracking-tag)', textTransform: 'uppercase', color: 'var(--chicle)', marginBottom: '18px' }}>Resultados para “{search.trim()}”</h3>
+                  {matches.length === 0 ? (
+                    <p style={{ color: 'var(--ciruela-60)' }}>No encontramos productos con ese nombre.</p>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '22px' }}>
+                      {matches.map((p) => <ProductCard key={p.id} {...p} onAdd={(tone) => add(p, tone)} getRemaining={(tone) => remainingFor(p, tone)} />)}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return PRODUCT_CATEGORY_ORDER.map((cat) => (
+              <div key={cat} id={CATEGORY_ANCHORS[cat]} style={{ marginBottom: '46px', scrollMarginTop: '84px' }}>
+                <h3 style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '.85rem', letterSpacing: 'var(--tracking-tag)', textTransform: 'uppercase', color: 'var(--chicle)', marginBottom: '18px' }}>{cat}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '22px' }}>
+                  {products.filter((p) => p.category === cat).map((p) => <ProductCard key={p.id} {...p} onAdd={(tone) => add(p, tone)} getRemaining={(tone) => remainingFor(p, tone)} />)}
+                </div>
               </div>
-            </div>
-          ))}
+            ));
+          })()}
           {loading && <p style={{ textAlign: 'center', color: 'var(--ciruela-60)' }}>Cargando catálogo…</p>}
           <p style={{ marginTop: '10px', fontSize: '.88rem', color: 'var(--ciruela-60)', textAlign: 'center' }}>¿Buscás Skincare? Todavía no tenemos stock cargado acá — escribinos por Instagram y te contamos qué hay.</p>
         </div>
@@ -603,6 +644,12 @@ function Storefront() {
 }
 
 const navLink = { textDecoration: 'none', fontSize: '.92rem', fontWeight: 500, color: 'var(--ciruela-60)' };
+const mobileMenuLink = { textDecoration: 'none', fontSize: '1rem', fontWeight: 600, color: 'var(--ciruela)', padding: '12px 0', borderBottom: '1px solid rgba(62,34,51,.08)' };
+const iconBtnStyle = (active) => ({
+  width: '38px', height: '38px', borderRadius: '50%', border: 'var(--border-1)', cursor: 'pointer',
+  background: active ? 'var(--frambuesa)' : 'transparent', color: active ? '#fff' : 'var(--ciruela)',
+  fontSize: '1rem', placeItems: 'center', transition: 'background .15s, color .15s',
+});
 
 window.Storefront = Storefront;
 

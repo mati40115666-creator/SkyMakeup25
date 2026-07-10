@@ -199,43 +199,108 @@ function ProductsTab() {
 }
 
 function ProductRow({ p, onSave, onDelete }) {
-  const { input, fmtMoney } = window.__skyAdminShared;
+  const { input, fmtMoney, resizeToFrame, slugify } = window.__skyAdminShared;
+  const [expanded, setExpanded] = React.useState(false);
+  const [title, setTitle] = React.useState(p.title);
+  const [description, setDescription] = React.useState(p.description || '');
   const [price, setPrice] = React.useState(p.price);
   const tones = p.tones && p.tones.length ? p.tones : null;
   const [stock, setStock] = React.useState(p.stock || {});
+  const [images, setImages] = React.useState((p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []));
+  const [uploading, setUploading] = React.useState(false);
 
   const commitPrice = () => { if (Number(price) !== Number(p.price)) onSave(p.id, { price: Number(price) }); };
+  const commitTitle = () => { if (title.trim() && title.trim() !== p.title) onSave(p.id, { title: title.trim() }); };
+  const commitDescription = () => { if (description !== (p.description || '')) onSave(p.id, { description }); };
   const commitStock = (key, val) => {
     const next = { ...stock, [key]: Math.max(0, parseInt(val, 10) || 0) };
     setStock(next);
     onSave(p.id, { stock: next });
   };
 
+  const addPhoto = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const blob = await resizeToFrame(file);
+      const path = `products/${Date.now()}-${slugify(p.title)}.jpg`;
+      const { error: upErr } = await window.sb.storage.from('product-images').upload(path, blob, { contentType: 'image/jpeg' });
+      if (upErr) throw upErr;
+      const url = window.sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+      const next = [...images, url];
+      setImages(next);
+      await onSave(p.id, { images: next, image_url: next[0] });
+    } catch (err) {
+      alert(err.message || 'Error al subir la foto.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const removePhoto = async (i) => {
+    const next = images.filter((_, idx) => idx !== i);
+    setImages(next);
+    await onSave(p.id, { images: next, image_url: next[0] || null });
+  };
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '56px 1.6fr 100px 1.4fr 90px 90px', gap: '14px', alignItems: 'center', background: '#fff', border: 'var(--border-1)', borderRadius: 'var(--radius-md)', padding: '12px 16px', opacity: p.active ? 1 : .5 }}>
-      <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: p.image_url ? `url(${p.image_url}) center/cover` : 'var(--petalo)', flexShrink: 0 }} />
-      <div>
-        <b style={{ fontSize: '.92rem', display: 'block' }}>{p.title}</b>
-        <span style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{p.category}</span>
+    <div style={{ background: '#fff', border: 'var(--border-1)', borderRadius: 'var(--radius-md)', padding: '12px 16px', opacity: p.active ? 1 : .5 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '56px 1.6fr 100px 1.4fr 90px 70px 70px', gap: '14px', alignItems: 'center' }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: images[0] ? `url(${images[0]}) center/cover` : 'var(--petalo)', flexShrink: 0 }} />
+        <div>
+          <b style={{ fontSize: '.92rem', display: 'block' }}>{p.title}</b>
+          <span style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{p.category}</span>
+        </div>
+        <div>
+          <input style={{ ...input, padding: '7px 8px' }} type="number" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={commitPrice} />
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {tones ? tones.map((t) => (
+            <label key={t} style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {t}: <input style={{ width: '46px', padding: '5px 6px', borderRadius: '6px', border: '1px solid rgba(62,34,51,.18)' }} type="number" min="0" value={stock[t] ?? 0} onChange={(e) => commitStock(t, e.target.value)} />
+            </label>
+          )) : (
+            <label style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              Stock: <input style={{ width: '54px', padding: '5px 6px', borderRadius: '6px', border: '1px solid rgba(62,34,51,.18)' }} type="number" min="0" value={stock._default ?? 0} onChange={(e) => commitStock('_default', e.target.value)} />
+            </label>
+          )}
+        </div>
+        <label style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: '6px', justifySelf: 'center' }}>
+          <input type="checkbox" checked={p.active} onChange={(e) => onSave(p.id, { active: e.target.checked })} /> Activo
+        </label>
+        <button onClick={() => setExpanded((s) => !s)} style={{ justifySelf: 'end', background: 'none', border: 'none', color: 'var(--frambuesa)', cursor: 'pointer', fontSize: '.85rem', fontWeight: 600 }}>{expanded ? 'Cerrar' : 'Editar'}</button>
+        <button onClick={() => onDelete(p.id)} style={{ justifySelf: 'end', background: 'none', border: 'none', color: '#B3261E', cursor: 'pointer', fontSize: '.85rem' }}>Eliminar</button>
       </div>
-      <div>
-        <input style={{ ...input, padding: '7px 8px' }} type="number" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={commitPrice} />
-      </div>
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        {tones ? tones.map((t) => (
-          <label key={t} style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            {t}: <input style={{ width: '46px', padding: '5px 6px', borderRadius: '6px', border: '1px solid rgba(62,34,51,.18)' }} type="number" min="0" value={stock[t] ?? 0} onChange={(e) => commitStock(t, e.target.value)} />
-          </label>
-        )) : (
-          <label style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Stock: <input style={{ width: '54px', padding: '5px 6px', borderRadius: '6px', border: '1px solid rgba(62,34,51,.18)' }} type="number" min="0" value={stock._default ?? 0} onChange={(e) => commitStock('_default', e.target.value)} />
-          </label>
-        )}
-      </div>
-      <label style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: '6px', justifySelf: 'center' }}>
-        <input type="checkbox" checked={p.active} onChange={(e) => onSave(p.id, { active: e.target.checked })} /> Activo
-      </label>
-      <button onClick={() => onDelete(p.id)} style={{ justifySelf: 'end', background: 'none', border: 'none', color: '#B3261E', cursor: 'pointer', fontSize: '.85rem' }}>Eliminar</button>
+
+      {expanded && (
+        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(62,34,51,.1)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div>
+            <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Nombre del producto</label>
+            <input style={input} value={title} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle} />
+          </div>
+          <div>
+            <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Descripción corta</label>
+            <input style={input} value={description} onChange={(e) => setDescription(e.target.value)} onBlur={commitDescription} />
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '8px' }}>Fotos ({images.length}) — la primera es la principal</label>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {images.map((url, i) => (
+                <div key={i} style={{ position: 'relative', width: '76px', height: '95px' }}>
+                  <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px', border: i === 0 ? '2px solid var(--frambuesa)' : 'var(--border-1)' }} />
+                  <button onClick={() => removePhoto(i)} style={{ position: 'absolute', top: '-6px', right: '-6px', width: '22px', height: '22px', borderRadius: '50%', border: 'none', background: '#fff', color: '#B3261E', fontSize: '.75rem', cursor: 'pointer', boxShadow: '0 2px 6px rgba(62,34,51,.3)' }}>✕</button>
+                </div>
+              ))}
+              <label style={{ width: '76px', height: '95px', borderRadius: '8px', border: '1.5px dashed rgba(62,34,51,.3)', display: 'grid', placeItems: 'center', cursor: 'pointer', fontSize: '.72rem', color: 'var(--ciruela-60)', textAlign: 'center' }}>
+                {uploading ? 'Subiendo…' : '+ Agregar'}
+                <input type="file" accept="image/*" onChange={addPhoto} disabled={uploading} style={{ display: 'none' }} />
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -276,7 +341,7 @@ function NewProductForm({ onDone }) {
       const stock = tones ? Object.fromEntries(tones.map((t) => [t, parseInt(defaultStock, 10) || 0])) : { _default: parseInt(defaultStock, 10) || 0 };
       const { error } = await window.sb.from('products').insert({
         category, title: title.trim(), description: description.trim(), price: Number(price),
-        image_url, tones, stock, active: true,
+        image_url, images: image_url ? [image_url] : null, tones, stock, active: true,
       });
       if (error) throw error;
       onDone();
