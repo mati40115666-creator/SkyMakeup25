@@ -126,7 +126,7 @@ const BANK = {
   cuenta: '1303941741001',
 };
 
-function CartDrawer({ open, items, onClose, onInc, onDec, total, waLink }) {
+function CartDrawer({ open, items, onClose, onInc, onDec, total, waLink, onFinalize }) {
   const fmt = (n) => '$' + n.toLocaleString('es-AR');
   const entries = Object.entries(items);
   const [step, setStep] = React.useState('cart');
@@ -221,7 +221,7 @@ function CartDrawer({ open, items, onClose, onInc, onDec, total, waLink }) {
               </p>
             </div>
             <div style={{ padding: '18px 24px 24px', borderTop: 'var(--border-1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <SkyButton href={comprobanteHref} target="_blank" rel="noopener noreferrer" style={{ width: '100%' }}>Enviar comprobante por WhatsApp 🛍️</SkyButton>
+              <SkyButton href={comprobanteHref} target="_blank" rel="noopener noreferrer" onClick={onFinalize} style={{ width: '100%' }}>Enviar comprobante por WhatsApp 🛍️</SkyButton>
               <SkyButton variant="ghost" onClick={() => setStep('cart')} style={{ width: '100%' }}>Volver al pedido</SkyButton>
             </div>
           </React.Fragment>
@@ -384,17 +384,28 @@ function Storefront() {
     } catch (e) { return {}; }
   });
   const [open, setOpen] = React.useState(false);
+  const [sold, setSold] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('sky_sold');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) { return {}; }
+  });
 
   React.useEffect(() => {
     try { localStorage.setItem('sky_cart', JSON.stringify(cart)); } catch (e) {}
   }, [cart]);
+  React.useEffect(() => {
+    try { localStorage.setItem('sky_sold', JSON.stringify(sold)); } catch (e) {}
+  }, [sold]);
 
   const cartKey = (p, tone) => (tone ? `${p.title} · Tono ${tone}` : p.title);
-  const remainingFor = (p, tone) => stockFor(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
+  // Stock disponible = stock total − ya vendidos (confirmados).
+  const availStock = (p, tone) => stockFor(p, tone) - (sold[cartKey(p, tone)] || 0);
+  const remainingFor = (p, tone) => availStock(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
 
   const add = (p, tone) => {
     const key = cartKey(p, tone);
-    const stock = stockFor(p, tone);
+    const stock = availStock(p, tone);
     setCart((c) => {
       const have = c[key]?.qty || 0;
       if (have >= stock) return c; // sin stock
@@ -415,6 +426,17 @@ function Storefront() {
     else next[name] = { ...next[name], qty: next[name].qty - 1 };
     return next;
   });
+
+  // Al enviar el comprobante: descuenta el stock (vendidos), vacía el carrito y lo cierra.
+  const finalize = () => {
+    setSold((s) => {
+      const next = { ...s };
+      for (const [name, item] of Object.entries(cart)) next[name] = (next[name] || 0) + item.qty;
+      return next;
+    });
+    setCart({});
+    setOpen(false);
+  };
 
   const count = Object.values(cart).reduce((s, i) => s + i.qty, 0);
   const total = Object.values(cart).reduce((s, i) => s + i.qty * i.price, 0);
@@ -545,7 +567,7 @@ function Storefront() {
         </button>
       )}
 
-      <window.CartDrawer open={open} items={cart} total={total} waLink={waLink} onClose={() => setOpen(false)} onInc={inc} onDec={dec} />
+      <window.CartDrawer open={open} items={cart} total={total} waLink={waLink} onClose={() => setOpen(false)} onInc={inc} onDec={dec} onFinalize={finalize} />
     </div>
   );
 }
