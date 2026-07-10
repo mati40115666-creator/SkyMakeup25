@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sky Makeup — Panel de administración</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon/favicon-32.png">
+<link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../_ds_bundle.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
+<style>*{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:var(--font-body)}</style>
+</head>
+<body>
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" rx="20" fill="#FFF3F7"/>
+  <rect x="24" y="30" width="52" height="40" rx="6" fill="#A82A63"/>
+  <rect x="30" y="38" width="40" height="6" rx="3" fill="#fff"/>
+  <rect x="30" y="50" width="26" height="6" rx="3" fill="#fff"/>
+</svg>
+</template>
+<div id="root"></div>
+<script type="text/babel">
+/* Sky Makeup — Panel de administración.
+   Login + gestión de productos (stock, precio, fotos), pedidos y registro de ventas.
+   Usa el cliente Supabase compartido (window.sb) y componentes del design system. */
+const SK = window.SkyMakeupDesignSystem_ae8c70;
+const { Button, Eyebrow } = SK;
+
+const wrap = { maxWidth: '1100px', margin: '0 auto', padding: '0 24px' };
+const input = {
+  padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(62,34,51,.18)',
+  fontSize: '.92rem', fontFamily: 'var(--font-body)', color: 'var(--ciruela)', background: '#fff', width: '100%', boxSizing: 'border-box',
+};
+const card = { background: '#fff', border: 'var(--border-1)', borderRadius: 'var(--radius-md)', padding: '18px 20px' };
+const label = { fontSize: '.72rem', fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' };
+
+function fmtMoney(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
+
+// ---- Redimensiona la foto subida a 4:5 centrada (mismo criterio que el catálogo). ----
+function resizeToFrame(file, tw = 640, th = 800) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.max(tw / img.width, th / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        const dx = (tw - dw) / 2, dy = (th - dh) / 2;
+        const c = document.createElement('canvas');
+        c.width = tw; c.height = th;
+        c.getContext('2d').drawImage(img, dx, dy, dw, dh);
+        c.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function slugify(s) {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+}
+
+const CATEGORIES = ['Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos', 'Skincare'];
+
+function Admin() {
+  const [session, setSession] = React.useState(null);
+  const [checking, setChecking] = React.useState(true);
+  const [tab, setTab] = React.useState('productos');
+
+  React.useEffect(() => {
+    window.sb.auth.getSession().then(({ data }) => { setSession(data.session); setChecking(false); });
+    const { data: sub } = window.sb.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  if (checking) return null;
+  if (!session) return <Login />;
+
+  return (
+    <div style={{ minHeight: '100%', background: 'var(--petalo)', color: 'var(--ciruela)' }}>
+      <header style={{ borderBottom: 'var(--border-1)', background: '#fff' }}>
+        <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '68px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'var(--font-display)', fontSize: '1.3rem' }}>
+            <span style={{ width: '38px', height: '38px', borderRadius: '50%', border: '1px solid rgba(242,107,165,.4)', background: 'url(../assets/logo.jpg) center / contain no-repeat', display: 'block' }} />
+            Sky <em style={{ fontStyle: 'normal', color: 'var(--frambuesa)' }}>Makeup</em> · Admin
+          </div>
+          <button onClick={() => window.sb.auth.signOut()} style={{ background: 'none', border: 'none', color: 'var(--ciruela-60)', cursor: 'pointer', fontSize: '.9rem' }}>Cerrar sesión</button>
+        </div>
+        <div style={{ ...wrap, display: 'flex', gap: '4px', paddingBottom: '2px' }}>
+          {[['productos', 'Productos'], ['pedidos', 'Pedidos'], ['ventas', 'Ventas']].map(([key, lbl]) => (
+            <button key={key} onClick={() => setTab(key)} style={{
+              padding: '10px 18px', border: 'none', background: 'none', cursor: 'pointer',
+              fontSize: '.92rem', fontWeight: 600, color: tab === key ? 'var(--frambuesa)' : 'var(--ciruela-60)',
+              borderBottom: tab === key ? '2px solid var(--frambuesa)' : '2px solid transparent',
+            }}>{lbl}</button>
+          ))}
+        </div>
+      </header>
+      <div style={{ ...wrap, padding: '32px 24px 60px' }}>
+        {tab === 'productos' && <ProductsTab />}
+        {tab === 'pedidos' && <OrdersTab />}
+        {tab === 'ventas' && <SalesTab />}
+      </div>
+    </div>
+  );
+}
+
+function Login() {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true); setError('');
+    const { error } = await window.sb.auth.signInWithPassword({ email: email.trim(), password });
+    setLoading(false);
+    if (error) setError('Email o contraseña incorrectos.');
+  };
+
+  return (
+    <div style={{ minHeight: '100%', display: 'grid', placeItems: 'center', background: 'var(--petalo)', padding: '24px' }}>
+      <form onSubmit={submit} style={{ ...card, width: '100%', maxWidth: '360px' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: '1.5rem', margin: '0 0 4px' }}>Sky <em style={{ fontStyle: 'normal', color: 'var(--frambuesa)' }}>Makeup</em></h1>
+        <p style={{ color: 'var(--ciruela-60)', fontSize: '.9rem', margin: '0 0 20px' }}>Panel de administración</p>
+        <label style={label}>Email</label>
+        <input style={{ ...input, marginBottom: '14px' }} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <label style={label}>Contraseña</label>
+        <input style={{ ...input, marginBottom: '16px' }} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        {error && <p style={{ color: '#B3261E', fontSize: '.85rem', margin: '0 0 12px' }}>{error}</p>}
+        <Button type="submit" style={{ width: '100%', ...(loading ? { opacity: .6, pointerEvents: 'none' } : {}) }}>{loading ? 'Ingresando…' : 'Ingresar'}</Button>
+      </form>
+    </div>
+  );
+}
+
+window.Admin = Admin;
+window.__skyAdminShared = { wrap, input, card, label, fmtMoney, resizeToFrame, slugify, CATEGORIES };
+
+</script>
+<script type="text/babel">
+/* Sky Makeup — Admin: pestaña Productos.
+   Editar stock/precio/estado, agregar producto nuevo con foto (auto-recorte 4:5), eliminar. */
+function ProductsTab() {
+  const { wrap, input, card, label, fmtMoney, resizeToFrame, slugify, CATEGORIES } = window.__skyAdminShared;
+  const [products, setProducts] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [showForm, setShowForm] = React.useState(false);
+
+  const load = () => {
+    setLoading(true);
+    window.sb.from('products').select('*').order('category').order('sort_order').then(({ data, error }) => {
+      if (!error) setProducts(data || []);
+      setLoading(false);
+    });
+  };
+  React.useEffect(load, []);
+
+  const saveField = async (id, patch) => {
+    setProducts((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    await window.sb.from('products').update(patch).eq('id', id);
+  };
+
+  const removeProduct = async (id) => {
+    if (!confirm('¿Eliminar este producto? No se puede deshacer.')) return;
+    await window.sb.from('products').delete().eq('id', id);
+    setProducts((ps) => ps.filter((p) => p.id !== id));
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: '1.4rem', margin: 0 }}>Productos</h2>
+        <button onClick={() => setShowForm((s) => !s)} style={{ padding: '10px 18px', borderRadius: '999px', border: 'none', background: 'var(--frambuesa)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+          {showForm ? 'Cancelar' : '+ Agregar producto'}
+        </button>
+      </div>
+
+      {showForm && <NewProductForm onDone={() => { setShowForm(false); load(); }} />}
+
+      {loading ? <p style={{ color: 'var(--ciruela-60)' }}>Cargando…</p> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {products.map((p) => <ProductRow key={p.id} p={p} onSave={saveField} onDelete={removeProduct} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProductRow({ p, onSave, onDelete }) {
+  const { input, fmtMoney } = window.__skyAdminShared;
+  const [price, setPrice] = React.useState(p.price);
+  const tones = p.tones && p.tones.length ? p.tones : null;
+  const [stock, setStock] = React.useState(p.stock || {});
+
+  const commitPrice = () => { if (Number(price) !== Number(p.price)) onSave(p.id, { price: Number(price) }); };
+  const commitStock = (key, val) => {
+    const next = { ...stock, [key]: Math.max(0, parseInt(val, 10) || 0) };
+    setStock(next);
+    onSave(p.id, { stock: next });
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '56px 1.6fr 100px 1.4fr 90px 90px', gap: '14px', alignItems: 'center', background: '#fff', border: 'var(--border-1)', borderRadius: 'var(--radius-md)', padding: '12px 16px', opacity: p.active ? 1 : .5 }}>
+      <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: p.image_url ? `url(${p.image_url}) center/cover` : 'var(--petalo)', flexShrink: 0 }} />
+      <div>
+        <b style={{ fontSize: '.92rem', display: 'block' }}>{p.title}</b>
+        <span style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{p.category}</span>
+      </div>
+      <div>
+        <input style={{ ...input, padding: '7px 8px' }} type="number" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={commitPrice} />
+      </div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        {tones ? tones.map((t) => (
+          <label key={t} style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {t}: <input style={{ width: '46px', padding: '5px 6px', borderRadius: '6px', border: '1px solid rgba(62,34,51,.18)' }} type="number" min="0" value={stock[t] ?? 0} onChange={(e) => commitStock(t, e.target.value)} />
+          </label>
+        )) : (
+          <label style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Stock: <input style={{ width: '54px', padding: '5px 6px', borderRadius: '6px', border: '1px solid rgba(62,34,51,.18)' }} type="number" min="0" value={stock._default ?? 0} onChange={(e) => commitStock('_default', e.target.value)} />
+          </label>
+        )}
+      </div>
+      <label style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: '6px', justifySelf: 'center' }}>
+        <input type="checkbox" checked={p.active} onChange={(e) => onSave(p.id, { active: e.target.checked })} /> Activo
+      </label>
+      <button onClick={() => onDelete(p.id)} style={{ justifySelf: 'end', background: 'none', border: 'none', color: '#B3261E', cursor: 'pointer', fontSize: '.85rem' }}>Eliminar</button>
+    </div>
+  );
+}
+
+function NewProductForm({ onDone }) {
+  const { input, card, label, resizeToFrame, slugify, CATEGORIES } = window.__skyAdminShared;
+  const [category, setCategory] = React.useState(CATEGORIES[0]);
+  const [title, setTitle] = React.useState('');
+  const [description, setDescription] = React.useState('');
+  const [price, setPrice] = React.useState('');
+  const [tonesStr, setTonesStr] = React.useState('');
+  const [defaultStock, setDefaultStock] = React.useState('1');
+  const [file, setFile] = React.useState(null);
+  const [preview, setPreview] = React.useState(null);
+  const [saving, setSaving] = React.useState(false);
+  const [err, setErr] = React.useState('');
+
+  const onFile = (e) => {
+    const f = e.target.files[0];
+    setFile(f);
+    if (f) setPreview(URL.createObjectURL(f));
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!title.trim() || !price) { setErr('Completá al menos el nombre y el precio.'); return; }
+    setSaving(true); setErr('');
+    try {
+      let image_url = null;
+      if (file) {
+        const blob = await resizeToFrame(file);
+        const path = `products/${Date.now()}-${slugify(title)}.jpg`;
+        const { error: upErr } = await window.sb.storage.from('product-images').upload(path, blob, { contentType: 'image/jpeg' });
+        if (upErr) throw upErr;
+        image_url = window.sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+      }
+      const tones = tonesStr.trim() ? tonesStr.split(',').map((t) => t.trim()).filter(Boolean) : null;
+      const stock = tones ? Object.fromEntries(tones.map((t) => [t, parseInt(defaultStock, 10) || 0])) : { _default: parseInt(defaultStock, 10) || 0 };
+      const { error } = await window.sb.from('products').insert({
+        category, title: title.trim(), description: description.trim(), price: Number(price),
+        image_url, tones, stock, active: true,
+      });
+      if (error) throw error;
+      onDone();
+    } catch (e2) {
+      setErr(e2.message || 'Error al guardar.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} style={{ ...card, marginBottom: '24px', display: 'grid', gridTemplateColumns: '160px 1fr', gap: '18px' }}>
+      <div>
+        <label style={label}>Foto</label>
+        <div style={{ width: '140px', height: '175px', borderRadius: 'var(--radius-md)', background: preview ? `url(${preview}) center/contain no-repeat, var(--petalo)` : 'var(--petalo)', border: 'var(--border-1)', marginBottom: '8px' }} />
+        <input type="file" accept="image/*" onChange={onFile} style={{ fontSize: '.78rem' }} />
+        <p style={{ fontSize: '.72rem', color: 'var(--ciruela-60)', margin: '6px 0 0' }}>Se recorta y acomoda sola al recuadro.</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={label}>Nombre del producto</label>
+          <input style={input} value={title} onChange={(e) => setTitle(e.target.value)} required />
+        </div>
+        <div>
+          <label style={label}>Categoría</label>
+          <select style={input} value={category} onChange={(e) => setCategory(e.target.value)}>
+            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={label}>Precio ($)</label>
+          <input style={input} type="number" value={price} onChange={(e) => setPrice(e.target.value)} required />
+        </div>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={label}>Descripción corta</label>
+          <input style={input} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div>
+          <label style={label}>Tonos (opcional, separados por coma)</label>
+          <input style={input} placeholder="01, 05" value={tonesStr} onChange={(e) => setTonesStr(e.target.value)} />
+        </div>
+        <div>
+          <label style={label}>Stock {tonesStr.trim() ? '(por cada tono)' : ''}</label>
+          <input style={input} type="number" min="0" value={defaultStock} onChange={(e) => setDefaultStock(e.target.value)} />
+        </div>
+        {err && <p style={{ gridColumn: '1 / -1', color: '#B3261E', fontSize: '.85rem', margin: 0 }}>{err}</p>}
+        <div style={{ gridColumn: '1 / -1' }}>
+          <button type="submit" disabled={saving} style={{ padding: '11px 22px', borderRadius: '999px', border: 'none', background: 'var(--frambuesa)', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: saving ? .6 : 1 }}>
+            {saving ? 'Guardando…' : 'Guardar producto'}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+window.ProductsTab = ProductsTab;
+
+</script>
+<script type="text/babel">
+/* Sky Makeup — Admin: pestaña Pedidos. Marcar pagado/cancelado; cancelar devuelve el stock. */
+function OrdersTab() {
+  const { fmtMoney } = window.__skyAdminShared;
+  const [orders, setOrders] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filter, setFilter] = React.useState('pending');
+
+  const load = () => {
+    setLoading(true);
+    window.sb.from('orders').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+      if (!error) setOrders(data || []);
+      setLoading(false);
+    });
+  };
+  React.useEffect(load, []);
+
+  const setStatus = async (order, status) => {
+    if (status === 'cancelled' && order.status !== 'cancelled') {
+      // Devolver stock reservado.
+      for (const item of order.items || []) {
+        if (item.productId) await window.sb.rpc('restore_stock', { p_id: item.productId, p_tone: item.tone, p_qty: item.qty });
+      }
+    }
+    await window.sb.from('orders').update({ status }).eq('id', order.id);
+    setOrders((os) => os.map((o) => (o.id === order.id ? { ...o, status } : o)));
+  };
+
+  const shown = filter === 'todos' ? orders : orders.filter((o) => o.status === filter);
+  const badgeColor = { pending: '#B08900', paid: '#2E7D32', cancelled: '#B3261E' };
+  const badgeLabel = { pending: 'Pendiente', paid: 'Pagado', cancelled: 'Cancelado' };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: '1.4rem', margin: 0 }}>Pedidos</h2>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {[['pending', 'Pendientes'], ['paid', 'Pagados'], ['cancelled', 'Cancelados'], ['todos', 'Todos']].map(([k, l]) => (
+            <button key={k} onClick={() => setFilter(k)} style={{
+              padding: '7px 14px', borderRadius: '999px', border: '1px solid rgba(62,34,51,.18)', cursor: 'pointer', fontSize: '.82rem',
+              background: filter === k ? 'var(--frambuesa)' : '#fff', color: filter === k ? '#fff' : 'var(--ciruela)',
+            }}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? <p style={{ color: 'var(--ciruela-60)' }}>Cargando…</p> : shown.length === 0 ? (
+        <p style={{ color: 'var(--ciruela-60)' }}>No hay pedidos en esta categoría.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {shown.map((o) => (
+            <div key={o.id} style={{ background: '#fff', border: 'var(--border-1)', borderRadius: 'var(--radius-md)', padding: '16px 20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
+                <div>
+                  <b>{o.customer_name}</b> · <span style={{ color: 'var(--ciruela-60)' }}>{o.customer_phone}</span>
+                  <div style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{new Date(o.created_at).toLocaleString('es-AR')}</div>
+                </div>
+                <span style={{ padding: '4px 12px', borderRadius: '999px', background: badgeColor[o.status] + '20', color: badgeColor[o.status], fontSize: '.78rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{badgeLabel[o.status]}</span>
+              </div>
+              <ul style={{ margin: '0 0 10px', padding: '0 0 0 18px', fontSize: '.88rem' }}>
+                {(o.items || []).map((it, i) => <li key={i}>{it.qty}x {it.title} — {fmtMoney(it.price * it.qty)}</li>)}
+              </ul>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <b>{fmtMoney(o.total)}</b>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {o.status !== 'paid' && <button onClick={() => setStatus(o, 'paid')} style={{ padding: '7px 14px', borderRadius: '999px', border: 'none', background: '#2E7D32', color: '#fff', fontSize: '.8rem', cursor: 'pointer' }}>Marcar pagado</button>}
+                  {o.status !== 'cancelled' && <button onClick={() => setStatus(o, 'cancelled')} style={{ padding: '7px 14px', borderRadius: '999px', border: '1px solid #B3261E', background: 'none', color: '#B3261E', fontSize: '.8rem', cursor: 'pointer' }}>Cancelar</button>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+window.OrdersTab = OrdersTab;
+
+</script>
+<script type="text/babel">
+/* Sky Makeup — Admin: pestaña Ventas. Registro simple de pedidos pagados. */
+function SalesTab() {
+  const { fmtMoney, card } = window.__skyAdminShared;
+  const [orders, setOrders] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    window.sb.from('orders').select('*').eq('status', 'paid').order('created_at', { ascending: false }).then(({ data, error }) => {
+      if (!error) setOrders(data || []);
+      setLoading(false);
+    });
+  }, []);
+
+  const total = orders.reduce((s, o) => s + Number(o.total), 0);
+  const now = new Date();
+  const thisMonth = orders.filter((o) => { const d = new Date(o.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+  const totalMonth = thisMonth.reduce((s, o) => s + Number(o.total), 0);
+
+  return (
+    <div>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: '1.4rem', margin: '0 0 18px' }}>Ventas</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '16px', marginBottom: '26px' }}>
+        <div style={card}>
+          <div style={{ fontSize: '.75rem', color: 'var(--ciruela-60)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '4px' }}>Total histórico</div>
+          <b style={{ fontSize: '1.6rem', fontFamily: 'var(--font-display)', fontWeight: 400 }}>{fmtMoney(total)}</b>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: '.75rem', color: 'var(--ciruela-60)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '4px' }}>Este mes</div>
+          <b style={{ fontSize: '1.6rem', fontFamily: 'var(--font-display)', fontWeight: 400 }}>{fmtMoney(totalMonth)}</b>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: '.75rem', color: 'var(--ciruela-60)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '4px' }}>Pedidos pagados</div>
+          <b style={{ fontSize: '1.6rem', fontFamily: 'var(--font-display)', fontWeight: 400 }}>{orders.length}</b>
+        </div>
+      </div>
+
+      {loading ? <p style={{ color: 'var(--ciruela-60)' }}>Cargando…</p> : orders.length === 0 ? (
+        <p style={{ color: 'var(--ciruela-60)' }}>Todavía no hay ventas confirmadas.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {orders.map((o) => (
+            <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: 'var(--border-1)', borderRadius: 'var(--radius-md)', padding: '12px 18px' }}>
+              <div>
+                <b style={{ fontSize: '.92rem' }}>{o.customer_name}</b>
+                <div style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{new Date(o.created_at).toLocaleDateString('es-AR')} · {(o.items || []).length} producto(s)</div>
+              </div>
+              <b>{fmtMoney(o.total)}</b>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+window.SalesTab = SalesTab;
+
+</script>
+<script type="text/babel">
+  ReactDOM.createRoot(document.getElementById('root')).render(<window.Admin />);
+</script>
+</body>
+</html>

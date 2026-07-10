@@ -69,6 +69,8 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <script src="_ds_bundle.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -126,10 +128,27 @@ const BANK = {
   cuenta: '1303941741001',
 };
 
+const inputStyle = {
+  width: '100%', boxSizing: 'border-box', padding: '12px 14px',
+  borderRadius: 'var(--radius-md)', border: 'var(--border-1)',
+  fontSize: '.95rem', fontFamily: 'var(--font-body)', color: 'var(--ciruela)',
+  background: '#fff',
+};
+
 function CartDrawer({ open, items, onClose, onInc, onDec, total, waLink, onFinalize }) {
   const fmt = (n) => '$' + n.toLocaleString('es-AR');
   const entries = Object.entries(items);
   const [step, setStep] = React.useState('cart');
+  const [name, setName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [sending, setSending] = React.useState(false);
+  const canContinue = entries.length > 0 && name.trim().length > 1 && phone.trim().length > 5;
+
+  const finalizeAndSend = async () => {
+    setSending(true);
+    try { await onFinalize({ name: name.trim(), phone: phone.trim() }); }
+    finally { setSending(false); }
+  };
 
   // Al cerrar el carrito o vaciarlo, volvemos al paso 1.
   React.useEffect(() => { if (!open) setStep('cart'); }, [open]);
@@ -187,13 +206,25 @@ function CartDrawer({ open, items, onClose, onInc, onDec, total, waLink, onFinal
               ))}
             </div>
             <div style={{ padding: '20px 24px 26px', borderTop: 'var(--border-1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                <input
+                  value={name} onChange={(e) => setName(e.target.value)}
+                  placeholder="Nombre y apellido"
+                  style={inputStyle}
+                />
+                <input
+                  value={phone} onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Tu número de WhatsApp"
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', margin: '14px 0 6px' }}>
                 <span>Total</span><b style={{ fontSize: '1.25rem' }}>{fmt(total)}</b>
               </div>
               <p style={{ fontSize: '.8rem', color: 'var(--ciruela-60)', margin: '0 0 16px' }}>
                 El envío no está incluido. Coordinamos el costo por WhatsApp al finalizar la compra.
               </p>
-              <SkyButton onClick={() => setStep('payment')} disabled={entries.length === 0} style={{ width: '100%', ...(entries.length === 0 ? { pointerEvents: 'none', opacity: .5 } : {}) }}>Continuar con el pago</SkyButton>
+              <SkyButton onClick={() => setStep('payment')} disabled={!canContinue} style={{ width: '100%', ...(!canContinue ? { pointerEvents: 'none', opacity: .5 } : {}) }}>Continuar con el pago</SkyButton>
             </div>
           </React.Fragment>
         ) : (
@@ -221,7 +252,7 @@ function CartDrawer({ open, items, onClose, onInc, onDec, total, waLink, onFinal
               </p>
             </div>
             <div style={{ padding: '18px 24px 24px', borderTop: 'var(--border-1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <SkyButton href={comprobanteHref} target="_blank" rel="noopener noreferrer" onClick={onFinalize} style={{ width: '100%' }}>Enviar comprobante por WhatsApp 🛍️</SkyButton>
+              <SkyButton href={comprobanteHref} target="_blank" rel="noopener noreferrer" onClick={finalizeAndSend} style={{ width: '100%', ...(sending ? { pointerEvents: 'none', opacity: .6 } : {}) }}>{sending ? 'Enviando…' : 'Enviar comprobante por WhatsApp 🛍️'}</SkyButton>
               <SkyButton variant="ghost" onClick={() => setStep('cart')} style={{ width: '100%' }}>Volver al pedido</SkyButton>
             </div>
           </React.Fragment>
@@ -298,54 +329,14 @@ window.CartDrawer = CartDrawer;
 const SK = window.SkyMakeupDesignSystem_ae8c70;
 const { Button, Eyebrow, Marquee, CategoryBubble, ProductCard, StepCard, TrustItem } = SK;
 
-const PRODUCTS = [
-  // Rostro
-  { category: 'Rostro', title: 'Polvo compacto Rimera Quince tono 03', description: 'Acabado mate que sella tu base y controla brillos todo el día.', price: '$3.000', raw: 3000, swatch: 4, image: 'assets/products/framed/polvo-rimera-quince-03.jpeg' },
-  { category: 'Rostro', title: 'Base Pink 21 tono 01', description: 'Cobertura media y textura liviana, ideal para el día a día.', price: '$3.000', raw: 3000, swatch: 5 },
-  { category: 'Rostro', title: 'Rubor en polvo Ushas', description: 'Color natural y fácil de difuminar. Elegí tu tono.', price: '$2.500', raw: 2500, swatch: 3, tones: ['04', '05'], image: 'assets/products/framed/rubor-ushas.jpeg' },
-  { category: 'Rostro', title: 'Base Ruby Rose tono 03', description: 'Cobertura alta con acabado luminoso.', price: '$4.500', raw: 4500, swatch: 5, badge: 'Más vendido' },
-  { category: 'Rostro', title: 'Base Huda tono 220', description: 'Acabado natural de larga duración.', price: '$3.000', raw: 3000, swatch: 3 },
-  { category: 'Rostro', title: 'Corrector', description: 'Cubre ojeras e imperfecciones sin marcar líneas. Elegí tu tono.', price: '$3.000', raw: 3000, swatch: 4, tones: ['02', '03'], image: 'assets/products/framed/corrector.jpeg' },
-  { category: 'Rostro', title: 'Set de esponjas x7', description: 'Set completo para aplicar base, corrector y polvo como una pro.', price: '$3.000', raw: 3000, swatch: 3, image: 'assets/products/framed/set-esponjas-x7.jpeg' },
-
-  // Labiales
-  { category: 'Labiales', title: 'Gloss Pink 21', description: 'Brillo espejado sin sensación pegajosa. Elegí tu tono.', price: '$3.200', raw: 3200, swatch: 1, badge: 'Más vendido', tones: ['01', '05'], image: 'assets/products/framed/gloss-pink21.jpeg' },
-  { category: 'Labiales', title: 'Gloss Mely tono 05', description: 'Hidrata y da brillo con un toque de color.', price: '$3.000', raw: 3000, swatch: 1, image: 'assets/products/framed/gloss-mely-05.jpeg' },
-  { category: 'Labiales', title: 'Labial matte Pink 21 tono 03', description: 'Acabado mate aterciopelado de larga duración.', price: '$2.500', raw: 2500, swatch: 6, image: 'assets/products/framed/labial-matte-pink21-03.jpeg' },
-  { category: 'Labiales', title: 'Labial matte y gloss 2 en 1 Laurenza', description: 'Dos acabados en un solo producto: mate de un lado, gloss del otro.', price: '$3.800', raw: 3800, swatch: 1, image: 'assets/products/framed/labial-gloss-laurenza.jpeg' },
-  { category: 'Labiales', title: 'Labial matte Mely tono 03', description: 'Color intenso con acabado mate parejo.', price: '$2.800', raw: 2800, swatch: 6, image: 'assets/products/framed/labial-matte-mely-03.jpeg' },
-  { category: 'Labiales', title: 'Lip gloss matte Mely 03', description: 'Brillo suave con acabado aterciopelado, no pegajoso.', price: '$3.000', raw: 3000, swatch: 1, image: 'assets/products/framed/lip-gloss-mely-03.jpeg' },
-  { category: 'Labiales', title: 'Gloss Tei tono 03', description: 'Brillo jugoso para looks del día a día.', price: '$2.500', raw: 2500, swatch: 6 },
-  { category: 'Labiales', title: 'Labial matte Tei tono 03', description: 'Mate cómodo que no reseca.', price: '$3.000', raw: 3000, swatch: 1, image: 'assets/products/framed/labial-matte-tei-03.jpeg' },
-  { category: 'Labiales', title: 'Labial matte en barra Ushas tono 02', description: 'Color parejo en una sola pasada.', price: '$2.500', raw: 2500, swatch: 6, image: 'assets/products/framed/labial-barra-ushas-02.jpeg' },
-  { category: 'Labiales', title: 'Delineador de labios', description: 'Define el contorno y hace durar más tu labial.', price: '$1.500', raw: 1500, swatch: 1 },
-  { category: 'Labiales', title: 'Labial matte Tei', description: 'Mate cómodo que no reseca, color parejo en un solo paso.', price: '$3.000', raw: 3000, swatch: 6, image: 'assets/products/framed/labial-matte-tei.jpeg' },
-
-  // Máscaras y Delineadores
-  { category: 'Máscaras y Delineadores', title: 'Arqueador', description: 'Fija y da forma a tus cejas todo el día.', price: '$3.200', raw: 3200, swatch: 2, image: 'assets/products/framed/arqueador.jpeg' },
-  { category: 'Máscaras y Delineadores', title: 'Paleta de sombras Pink 21', description: 'Tonos combinables para looks naturales o más intensos.', price: '$5.000', raw: 5000, swatch: 2, badge: 'Nuevo', image: 'assets/products/framed/paleta-pink21.jpeg' },
-  { category: 'Máscaras y Delineadores', title: 'Máscara de pestañas Pink 21', description: 'Volumen y largo sin grumos.', price: '$3.000', raw: 3000, swatch: 2, image: 'assets/products/framed/mascara-pink21.jpeg' },
-  { category: 'Máscaras y Delineadores', title: 'Máscara de pestañas mini Tango', description: 'Formato mini, ideal para retocar en la cartera.', price: '$3.000', raw: 3000, swatch: 2, image: 'assets/products/framed/mascara-mini-tango.jpeg' },
-  { category: 'Máscaras y Delineadores', title: 'Delineador en fibra líquido NAEZ', description: 'Punta de fibra ultrafina para un trazo preciso y parejo.', price: '$2.000', raw: 2000, swatch: 2, image: 'assets/products/framed/delineador-fibra-naez.jpeg' },
-  { category: 'Máscaras y Delineadores', title: 'Delineador líquido Ruby Rose', description: 'Negro intenso y secado rápido para un cat-eye bien definido.', price: '$4.000', raw: 4000, swatch: 2 },
-
-  // Pestañas y Pegamentos
-  { category: 'Pestañas y Pegamentos', title: 'Sellador + Bonder', description: 'Fija tus pestañas y sella el pegamento para que duren muchísimo más.', price: '$5.500', raw: 5500, swatch: 2, image: 'assets/products/framed/sellador-bonder.jpeg' },
-  { category: 'Pestañas y Pegamentos', title: 'Pestañas en grupo 40D+50D 0.07D MIX NAEZ', description: 'Pestañas en grupo, mix 40D y 50D con curva D 0.07, para volumen a medida.', price: '$6.800', raw: 6800, swatch: 2, badge: 'Nuevo' },
-];
-
 const PRODUCT_CATEGORY_ORDER = ['Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos'];
 
 // ---- Stock ----
-// Por defecto 1 unidad por producto (y por tono en los que tienen variantes).
-// Para cargar stock real después, agregá overrides acá:
-//   'Base Huda tono 220': 3            (producto sin tonos)
-//   'Rubor en polvo Ushas·04': 2       (producto con tonos → título·tono)
-const DEFAULT_STOCK = 1;
-const STOCK_OVERRIDES = {};
+// El stock ahora vive en la base de datos (tabla products.stock, jsonb).
+// stockFor lee el jsonb cargado por producto: { _default: n } o { tono: n }.
 const stockFor = (p, tone) => {
-  const k = tone ? `${p.title}·${tone}` : p.title;
-  return STOCK_OVERRIDES[k] != null ? STOCK_OVERRIDES[k] : DEFAULT_STOCK;
+  const k = tone || '_default';
+  return (p.stock && p.stock[k] != null) ? p.stock[k] : 0;
 };
 
 // ⚠️ REEMPLAZAR con el número real de WhatsApp (formato internacional sin +, sin espacios).
@@ -377,6 +368,8 @@ const h2 = { fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 'var(
 const subP = { marginTop: '12px', color: 'var(--ciruela-60)' };
 
 function Storefront() {
+  const [products, setProducts] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
   const [cart, setCart] = React.useState(() => {
     try {
       const saved = localStorage.getItem('sky_cart');
@@ -384,33 +377,46 @@ function Storefront() {
     } catch (e) { return {}; }
   });
   const [open, setOpen] = React.useState(false);
-  const [sold, setSold] = React.useState(() => {
-    try {
-      const saved = localStorage.getItem('sky_sold');
-      return saved ? JSON.parse(saved) : {};
-    } catch (e) { return {}; }
-  });
+
+  React.useEffect(() => {
+    let cancelled = false;
+    window.sb.from('products').select('*').eq('active', true).order('sort_order').then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) { console.error(error); setLoading(false); return; }
+      const mapped = (data || []).map((row) => ({
+        id: row.id,
+        category: row.category,
+        title: row.title,
+        description: row.description,
+        price: '$' + Number(row.price).toLocaleString('es-AR'),
+        raw: Number(row.price),
+        image: row.image_url,
+        fit: row.image_url ? 'contain' : undefined,
+        badge: row.badge,
+        tones: row.tones,
+        stock: row.stock,
+      }));
+      setProducts(mapped);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   React.useEffect(() => {
     try { localStorage.setItem('sky_cart', JSON.stringify(cart)); } catch (e) {}
   }, [cart]);
-  React.useEffect(() => {
-    try { localStorage.setItem('sky_sold', JSON.stringify(sold)); } catch (e) {}
-  }, [sold]);
 
   const cartKey = (p, tone) => (tone ? `${p.title} · Tono ${tone}` : p.title);
-  // Stock disponible = stock total − ya vendidos (confirmados).
-  const availStock = (p, tone) => stockFor(p, tone) - (sold[cartKey(p, tone)] || 0);
-  const remainingFor = (p, tone) => availStock(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
+  const remainingFor = (p, tone) => stockFor(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
 
   const add = (p, tone) => {
     const key = cartKey(p, tone);
-    const stock = availStock(p, tone);
+    const stock = stockFor(p, tone);
     setCart((c) => {
       const have = c[key]?.qty || 0;
       if (have >= stock) return c; // sin stock
       const next = { ...c };
-      next[key] = { price: p.raw, qty: have + 1, stock };
+      next[key] = { price: p.raw, qty: have + 1, stock, productId: p.id, tone: tone || null };
       return next;
     });
     setOpen(true);
@@ -427,13 +433,25 @@ function Storefront() {
     return next;
   });
 
-  // Al enviar el comprobante: descuenta el stock (vendidos), vacía el carrito y lo cierra.
-  const finalize = () => {
-    setSold((s) => {
-      const next = { ...s };
-      for (const [name, item] of Object.entries(cart)) next[name] = (next[name] || 0) + item.qty;
-      return next;
+  // Al enviar el comprobante: guarda el pedido en la base, descuenta stock real,
+  // vacía el carrito y cierra.
+  const finalize = async ({ name, phone }) => {
+    const items = Object.entries(cart).map(([label, item]) => ({
+      title: label, qty: item.qty, price: item.price, productId: item.productId, tone: item.tone,
+    }));
+    const total = Object.values(cart).reduce((s, i) => s + i.qty * i.price, 0);
+    await window.sb.from('orders').insert({
+      customer_name: name,
+      customer_phone: phone,
+      items,
+      total,
+      status: 'pending',
     });
+    for (const item of Object.values(cart)) {
+      if (item.productId) {
+        await window.sb.rpc('decrement_stock', { p_id: item.productId, p_tone: item.tone, p_qty: item.qty });
+      }
+    }
     setCart({});
     setOpen(false);
   };
@@ -501,10 +519,11 @@ function Storefront() {
             <div key={cat} id={CATEGORY_ANCHORS[cat]} style={{ marginBottom: '46px', scrollMarginTop: '84px' }}>
               <h3 style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '.85rem', letterSpacing: 'var(--tracking-tag)', textTransform: 'uppercase', color: 'var(--chicle)', marginBottom: '18px' }}>{cat}</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '22px' }}>
-                {PRODUCTS.filter((p) => p.category === cat).map((p) => <ProductCard key={p.title} {...p} onAdd={(tone) => add(p, tone)} getRemaining={(tone) => remainingFor(p, tone)} />)}
+                {products.filter((p) => p.category === cat).map((p) => <ProductCard key={p.id} {...p} onAdd={(tone) => add(p, tone)} getRemaining={(tone) => remainingFor(p, tone)} />)}
               </div>
             </div>
           ))}
+          {loading && <p style={{ textAlign: 'center', color: 'var(--ciruela-60)' }}>Cargando catálogo…</p>}
           <p style={{ marginTop: '10px', fontSize: '.88rem', color: 'var(--ciruela-60)', textAlign: 'center' }}>¿Buscás Skincare? Todavía no tenemos stock cargado acá — escribinos por Instagram y te contamos qué hay.</p>
         </div>
       </section>

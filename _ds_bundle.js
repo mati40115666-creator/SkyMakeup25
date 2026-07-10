@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"SkyMakeupDesignSystem_ae8c70","components":[{"name":"Badge","sourcePath":"components/core/Badge.jsx"},{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"CategoryBubble","sourcePath":"components/core/CategoryBubble.jsx"},{"name":"Eyebrow","sourcePath":"components/core/Eyebrow.jsx"},{"name":"Marquee","sourcePath":"components/core/Marquee.jsx"},{"name":"SWATCHES","sourcePath":"components/core/ProductCard.jsx"},{"name":"ProductCard","sourcePath":"components/core/ProductCard.jsx"},{"name":"StepCard","sourcePath":"components/core/StepCard.jsx"},{"name":"TrustItem","sourcePath":"components/core/TrustItem.jsx"}],"sourceHashes":{"components/core/Badge.jsx":"faa79a09dde0","components/core/Button.jsx":"4724e5b0f3bd","components/core/CategoryBubble.jsx":"0e51e524b2c5","components/core/Eyebrow.jsx":"dc75d2bd5a8d","components/core/Marquee.jsx":"e8a977893ec0","components/core/ProductCard.jsx":"d5bb5c725645","components/core/StepCard.jsx":"07ccf6827106","components/core/TrustItem.jsx":"5b6187aad560","ui_kits/storefront/CartDrawer.jsx":"4a0ef7428e74","ui_kits/storefront/Storefront.jsx":"e84f407763f9"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":4,"namespace":"SkyMakeupDesignSystem_ae8c70","components":[{"name":"Badge","sourcePath":"components/core/Badge.jsx"},{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"CategoryBubble","sourcePath":"components/core/CategoryBubble.jsx"},{"name":"Eyebrow","sourcePath":"components/core/Eyebrow.jsx"},{"name":"Marquee","sourcePath":"components/core/Marquee.jsx"},{"name":"SWATCHES","sourcePath":"components/core/ProductCard.jsx"},{"name":"ProductCard","sourcePath":"components/core/ProductCard.jsx"},{"name":"StepCard","sourcePath":"components/core/StepCard.jsx"},{"name":"TrustItem","sourcePath":"components/core/TrustItem.jsx"}],"sourceHashes":{"components/core/Badge.jsx":"faa79a09dde0","components/core/Button.jsx":"4724e5b0f3bd","components/core/CategoryBubble.jsx":"0e51e524b2c5","components/core/Eyebrow.jsx":"dc75d2bd5a8d","components/core/Marquee.jsx":"e8a977893ec0","components/core/ProductCard.jsx":"d5bb5c725645","components/core/StepCard.jsx":"07ccf6827106","components/core/TrustItem.jsx":"5b6187aad560","ui_kits/storefront/CartDrawer.jsx":"106e0635d2fd","ui_kits/storefront/Storefront.jsx":"399eda8d7965"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -579,7 +579,8 @@ function CartDrawer({
   onInc,
   onDec,
   total,
-  waLink
+  waLink,
+  onFinalize
 }) {
   const fmt = n => '$' + n.toLocaleString('es-AR');
   const entries = Object.entries(items);
@@ -833,6 +834,7 @@ function CartDrawer({
     href: comprobanteHref,
     target: "_blank",
     rel: "noopener noreferrer",
+    onClick: onFinalize,
     style: {
       width: '100%'
     }
@@ -1255,16 +1257,31 @@ function Storefront() {
     }
   });
   const [open, setOpen] = React.useState(false);
+  const [sold, setSold] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('sky_sold');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
   React.useEffect(() => {
     try {
       localStorage.setItem('sky_cart', JSON.stringify(cart));
     } catch (e) {}
   }, [cart]);
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('sky_sold', JSON.stringify(sold));
+    } catch (e) {}
+  }, [sold]);
   const cartKey = (p, tone) => tone ? `${p.title} · Tono ${tone}` : p.title;
-  const remainingFor = (p, tone) => stockFor(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
+  // Stock disponible = stock total − ya vendidos (confirmados).
+  const availStock = (p, tone) => stockFor(p, tone) - (sold[cartKey(p, tone)] || 0);
+  const remainingFor = (p, tone) => availStock(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
   const add = (p, tone) => {
     const key = cartKey(p, tone);
-    const stock = stockFor(p, tone);
+    const stock = availStock(p, tone);
     setCart(c => {
       const have = c[key]?.qty || 0;
       if (have >= stock) return c; // sin stock
@@ -1301,6 +1318,19 @@ function Storefront() {
     };
     return next;
   });
+
+  // Al enviar el comprobante: descuenta el stock (vendidos), vacía el carrito y lo cierra.
+  const finalize = () => {
+    setSold(s => {
+      const next = {
+        ...s
+      };
+      for (const [name, item] of Object.entries(cart)) next[name] = (next[name] || 0) + item.qty;
+      return next;
+    });
+    setCart({});
+    setOpen(false);
+  };
   const count = Object.values(cart).reduce((s, i) => s + i.qty, 0);
   const total = Object.values(cart).reduce((s, i) => s + i.qty * i.price, 0);
   return /*#__PURE__*/React.createElement("div", {
@@ -1695,7 +1725,8 @@ function Storefront() {
     waLink: waLink,
     onClose: () => setOpen(false),
     onInc: inc,
-    onDec: dec
+    onDec: dec,
+    onFinalize: finalize
   }));
 }
 const navLink = {
