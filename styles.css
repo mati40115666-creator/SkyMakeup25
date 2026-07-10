@@ -1,0 +1,125 @@
+/* Sky Makeup — estilos combinados para deploy (tokens inline) */
+@import url('https://fonts.googleapis.com/css2?family=Gloock&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* Sky Makeup — Color tokens
+   Extracted verbatim from the storefront source (index.html :root). */
+:root {
+  /* ---- Base palette ---- */
+  --petalo: #FFF3F7;        /* soft blush page background */
+  --crema: #FFFBFD;         /* near-white card/surface */
+  --chicle: #F26BA5;        /* bubblegum pink — accents, tags */
+  --chicle-suave: #FBD3E4;  /* soft pink — pill backgrounds, step numbers */
+  --frambuesa: #A82A63;     /* raspberry — primary brand action */
+  --ciruela: #3E2233;       /* plum — body text, dark footer */
+  --ciruela-60: rgba(62, 34, 51, .62); /* muted plum — secondary text */
+  --borde: rgba(168, 42, 99, .16);     /* hairline border (raspberry @16%) */
+
+  /* ---- Extra swatch stops used in product gradients ---- */
+  --rosa-claro: #FFB6D3;
+  --rosa-palido: #FFE3EE;
+  --rosa-brillo: #FF9EC7;
+  --frambuesa-oscura: #7E1E4B;
+
+  /* ---- Semantic aliases ---- */
+  --surface-page: var(--petalo);
+  --surface-card: var(--crema);
+  --surface-soft: var(--chicle-suave);
+  --text-body: var(--ciruela);
+  --text-muted: var(--ciruela-60);
+  --text-on-brand: #ffffff;
+  --brand: var(--frambuesa);
+  --brand-accent: var(--chicle);
+  --border-hairline: var(--borde);
+}
+
+
+/* Sky Makeup — Typography tokens */
+:root {
+  /* Families */
+  --font-display: 'Gloock', Georgia, 'Times New Roman', serif;
+  --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+
+  /* Weights (Instrument Sans ships 400/500/600/700) */
+  --fw-regular: 400;   /* @kind font */
+  --fw-medium: 500;    /* @kind font */
+  --fw-semibold: 600;  /* @kind font */
+  --fw-bold: 700;      /* @kind font */
+
+  /* Fluid display sizes (clamp values taken from the storefront) */
+  --fs-hero: clamp(2.6rem, 6.4vw, 4.6rem);   /* @kind font */ /* hero H1 */
+  --fs-h2: clamp(1.8rem, 3.6vw, 2.6rem);     /* @kind font */ /* section H2 */
+  --fs-h2-final: clamp(2rem, 4.4vw, 3.2rem); /* @kind font */ /* CTA banner H2 */
+
+  /* Fixed sizes */
+  --fs-h3: 1.25rem;      /* @kind font */ /* card / step titles */
+  --fs-lead: 1.08rem;    /* @kind font */ /* hero paragraph */
+  --fs-body: 1rem;       /* @kind font */
+  --fs-sm: .92rem;       /* @kind font */
+  --fs-xs: .8rem;        /* @kind font */ /* eyebrows, tags */
+  --fs-price: 1.06rem;   /* @kind font */
+
+  /* Line heights */
+  --lh-tight: 1.08;      /* @kind font */ /* hero */
+  --lh-snug: 1.15;       /* @kind font */ /* headings */
+  --lh-body: 1.6;        /* @kind font */ /* body copy */
+
+  /* Tracking */
+  --tracking-eyebrow: .14em; /* @kind font */ /* uppercase eyebrows */
+  --tracking-tag: .12em;     /* @kind font */ /* category / marquee labels */
+  --tracking-tight: -.01em;  /* @kind font */ /* large display */
+}
+
+
+/* Sky Makeup — Spacing, layout & radius tokens */
+:root {
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 44px;   /* step-number circle diameter */
+  --space-section: 80px; /* vertical rhythm between sections */
+
+  /* Layout */
+  --wrap-max: 1120px;    /* content container max width */
+  --wrap-pad: 24px;      /* container side padding */
+  --header-h: 68px;
+
+  /* Radius */
+  --radius: 22px;        /* cards, steps, panels */
+  --radius-md: 16px;     /* cart line item */
+  --radius-pill: 999px;  /* buttons, badges, pills */
+}
+
+
+/* Sky Makeup — Shadows, borders & motion tokens */
+:root {
+  /* Elevation — all tinted with raspberry, never neutral gray */
+  --shadow-btn: 0 4px 14px rgba(168, 42, 99, .28);      /* resting primary button */
+  --shadow-btn-hover: 0 8px 20px rgba(168, 42, 99, .34);/* lifted button */
+  --shadow-card-hover: 0 16px 34px rgba(168, 42, 99, .14); /* card on hover */
+  --shadow-fab: 0 8px 24px rgba(168, 42, 99, .4);       /* floating cart button */
+  --shadow-drawer: -12px 0 40px rgba(62, 34, 51, .18);  /* cart drawer, plum-tinted */
+  --shadow-cta: 0 6px 20px rgba(0, 0, 0, .22);          /* white button on raspberry banner */
+
+  /* Borders */
+  --border-1: 1px solid var(--borde);       /* @kind other */
+  --focus-ring: 3px solid var(--frambuesa); /* @kind other */
+
+  /* Motion — quick, springy micro-interactions */
+  --dur-fast: .12s;  /* @kind other */
+  --dur: .15s;       /* @kind other */
+  --dur-med: .18s;   /* @kind other */
+  --dur-slow: .25s;  /* @kind other */
+  --ease: ease;      /* @kind other */
+
+  /* Signature overlays */
+  --overlay-scrim: rgba(62, 34, 51, .45);               /* @kind other */ /* modal / cart scrim */
+  --gradient-cta: linear-gradient(160deg, var(--frambuesa), #7E1E4B 70%); /* @kind other */ /* final CTA banner */
+  --gradient-shine: linear-gradient(100deg, var(--frambuesa) 20%, var(--chicle) 40%, #FF9EC7 50%, var(--chicle) 60%, var(--frambuesa) 80%); /* @kind other */ /* animated headline shine */
+  --gradient-ring: conic-gradient(from 210deg, var(--chicle), #FF9EC7, var(--frambuesa), var(--chicle)); /* @kind other */ /* category bubble ring */
+}
+
