@@ -91,6 +91,15 @@
     .sky-categories{grid-template-columns:repeat(2,minmax(0,1fr));}
     .sky-categories > a:last-child{grid-column:1 / span 2; width:min(100%,220px); justify-self:center;}
   }
+
+  /* Header responsive: en mobile ocultamos los links y dejamos logo + CTA. */
+  @media (max-width:720px){
+    .sky-nav-link{display:none;}
+    header nav a.sky-btn{padding:9px 16px !important; font-size:.82rem !important;}
+  }
+  @media (max-width:380px){
+    header nav a.sky-btn{padding:8px 12px !important; font-size:.76rem !important;}
+  }
 </style>
 </head>
 <body>
@@ -466,9 +475,9 @@ function Storefront() {
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '68px' }}>
           <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'var(--font-display)', fontSize: '1.45rem', textDecoration: 'none', color: 'inherit', letterSpacing: '.01em' }}><span style={{ width: '52px', height: '52px', borderRadius: '50%', border: '1px solid rgba(242,107,165,.54)', background: 'url(assets/logo.jpg) center / contain no-repeat', display: 'block', flexShrink: 0 }} />Sky <em style={{ fontStyle: 'normal', color: 'var(--frambuesa)' }}>Makeup</em></a>
           <nav style={{ display: 'flex', gap: '26px', alignItems: 'center' }}>
-            <a href="#categorias" style={navLink}>Categorías</a>
-            <a href="#productos" style={navLink}>Productos</a>
-            <a href="#como-comprar" style={navLink}>Cómo comprar</a>
+            <a href="#categorias" style={navLink} className="sky-nav-link">Categorías</a>
+            <a href="#productos" style={navLink} className="sky-nav-link">Productos</a>
+            <a href="#como-comprar" style={navLink} className="sky-nav-link">Cómo comprar</a>
             <Button size="sm" href={waLink(GENERIC_WA_MSG)} target="_blank" rel="noopener noreferrer">Pedir por WhatsApp</Button>
           </nav>
         </div>
