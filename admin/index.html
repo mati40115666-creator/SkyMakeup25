@@ -206,6 +206,7 @@ function ProductRow({ p, onSave, onDelete }) {
   const [price, setPrice] = React.useState(p.price);
   const tones = p.tones && p.tones.length ? p.tones : null;
   const [stock, setStock] = React.useState(p.stock || {});
+  const [tonesStr, setTonesStr] = React.useState(tones ? tones.join(', ') : '');
   const [images, setImages] = React.useState((p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []));
   const [uploading, setUploading] = React.useState(false);
 
@@ -216,6 +217,20 @@ function ProductRow({ p, onSave, onDelete }) {
     const next = { ...stock, [key]: Math.max(0, parseInt(val, 10) || 0) };
     setStock(next);
     onSave(p.id, { stock: next });
+  };
+
+  const commitTones = () => {
+    const newTones = tonesStr.trim() ? tonesStr.split(',').map((t) => t.trim()).filter(Boolean) : [];
+    const currentTones = tones || [];
+    if (newTones.length === currentTones.length && newTones.every((t, i) => t === currentTones[i])) return;
+    let newStock;
+    if (newTones.length) {
+      newStock = Object.fromEntries(newTones.map((t) => [t, stock[t] ?? (stock._default ?? 0)]));
+    } else {
+      newStock = { _default: stock._default ?? Object.values(stock)[0] ?? 0 };
+    }
+    setStock(newStock);
+    onSave(p.id, { tones: newTones.length ? newTones : null, stock: newStock });
   };
 
   const addPhoto = async (e) => {
@@ -283,6 +298,10 @@ function ProductRow({ p, onSave, onDelete }) {
           <div>
             <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Descripción corta</label>
             <input style={input} value={description} onChange={(e) => setDescription(e.target.value)} onBlur={commitDescription} />
+          </div>
+          <div>
+            <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Tonos (separados por coma, vacío = sin tonos)</label>
+            <input style={input} placeholder="01, 05" value={tonesStr} onChange={(e) => setTonesStr(e.target.value)} onBlur={commitTones} />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '8px' }}>Fotos ({images.length}) — la primera es la principal</label>
