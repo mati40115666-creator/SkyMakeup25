@@ -419,6 +419,18 @@ function Storefront() {
     try { localStorage.setItem('sky_cart', JSON.stringify(cart)); } catch (e) {}
   }, [cart]);
 
+  // Al buscar, bajamos autom\u00e1ticamente hasta el cat\u00e1logo para que se vean los resultados
+  // (una sola vez al empezar a escribir, no en cada tecla).
+  const didScrollForSearch = React.useRef(false);
+  React.useEffect(() => {
+    if (search.trim() && !didScrollForSearch.current) {
+      didScrollForSearch.current = true;
+      const el = document.getElementById('productos');
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+    }
+    if (!search.trim()) didScrollForSearch.current = false;
+  }, [search]);
+
   const cartKey = (p, tone) => (tone ? `${p.title} · Tono ${tone}` : p.title);
   const remainingFor = (p, tone) => stockFor(p, tone) - (cart[cartKey(p, tone)]?.qty || 0);
 
