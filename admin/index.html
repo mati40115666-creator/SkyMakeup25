@@ -199,7 +199,7 @@ function ProductsTab() {
 }
 
 function ProductRow({ p, onSave, onDelete }) {
-  const { input, fmtMoney, resizeToFrame, slugify } = window.__skyAdminShared;
+  const { input, fmtMoney, resizeToFrame, slugify, CATEGORIES } = window.__skyAdminShared;
   const [expanded, setExpanded] = React.useState(false);
   const [title, setTitle] = React.useState(p.title);
   const [description, setDescription] = React.useState(p.description || '');
@@ -294,6 +294,12 @@ function ProductRow({ p, onSave, onDelete }) {
           <div>
             <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Nombre del producto</label>
             <input style={input} value={title} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle} />
+          </div>
+          <div>
+            <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Categoría</label>
+            <select style={input} value={p.category} onChange={(e) => onSave(p.id, { category: e.target.value })}>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
           <div>
             <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Descripción corta</label>
