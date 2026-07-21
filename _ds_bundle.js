@@ -313,6 +313,8 @@ function ProductCard({
   title,
   description,
   price,
+  originalPrice,
+  discountPct,
   swatch = 1,
   image,
   images,
@@ -336,7 +338,7 @@ function ProductCard({
   const hasTones = tones && tones.length > 0;
   const anyLeft = hasTones ? tones.some(t => rem(t) > 0) : rem(tone) > 0;
   const fullyOut = !anyLeft;
-  const shownBadge = fullyOut ? 'Agotado' : badge;
+  const shownBadge = fullyOut ? 'Agotado' : discountPct > 0 ? '-' + discountPct + '%' : badge;
   const go = (e, dir) => {
     e.stopPropagation();
     setIdx(i => (i + dir + gallery.length) % gallery.length);
@@ -478,10 +480,24 @@ function ProductCard({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontWeight: 'var(--fw-bold)',
-      fontSize: 'var(--fs-price)'
+      display: 'flex',
+      alignItems: 'baseline',
+      gap: '8px',
+      flexWrap: 'wrap'
     }
-  }, price), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+  }, originalPrice && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '.92rem',
+      color: 'var(--text-muted)',
+      textDecoration: 'line-through'
+    }
+  }, originalPrice), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 'var(--fw-bold)',
+      fontSize: 'var(--fs-price)',
+      color: originalPrice ? 'var(--frambuesa)' : undefined
+    }
+  }, price)), /*#__PURE__*/React.createElement(__ds_scope.Button, {
     size: "sm",
     onClick: () => onAdd && onAdd(tone),
     disabled: soldOut
