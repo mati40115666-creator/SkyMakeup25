@@ -395,20 +395,27 @@ function Storefront() {
     window.sb.from('products').select('*').eq('active', true).order('sort_order').then(({ data, error }) => {
       if (cancelled) return;
       if (error) { console.error(error); setLoading(false); return; }
-      const mapped = (data || []).map((row) => ({
+      const mapped = (data || []).map((row) => {
+        const priceNum = Number(row.price);
+        const disc = Math.max(0, Math.min(90, Number(row.discount_pct) || 0));
+        const finalNum = disc > 0 ? Math.round(priceNum * (1 - disc / 100)) : priceNum;
+        return {
         id: row.id,
         category: row.category,
         title: row.title,
         description: row.description,
-        price: '$' + Number(row.price).toLocaleString('es-AR'),
-        raw: Number(row.price),
+        price: '$' + finalNum.toLocaleString('es-AR'),
+        raw: finalNum,
+        originalPrice: disc > 0 ? '$' + priceNum.toLocaleString('es-AR') : undefined,
+        discountPct: disc,
         image: row.image_url,
         images: (row.images && row.images.length) ? row.images : (row.image_url ? [row.image_url] : undefined),
         fit: row.image_url ? 'contain' : undefined,
         badge: row.badge,
         tones: row.tones,
         stock: row.stock,
-      }));
+      };
+      });
       setProducts(mapped);
       setLoading(false);
     });
