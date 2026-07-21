@@ -204,6 +204,7 @@ function ProductRow({ p, onSave, onDelete }) {
   const [title, setTitle] = React.useState(p.title);
   const [description, setDescription] = React.useState(p.description || '');
   const [price, setPrice] = React.useState(p.price);
+  const [discount, setDiscount] = React.useState(p.discount_pct || 0);
   const tones = p.tones && p.tones.length ? p.tones : null;
   const [stock, setStock] = React.useState(p.stock || {});
   const [tonesStr, setTonesStr] = React.useState(tones ? tones.join(', ') : '');
@@ -211,6 +212,7 @@ function ProductRow({ p, onSave, onDelete }) {
   const [uploading, setUploading] = React.useState(false);
 
   const commitPrice = () => { if (Number(price) !== Number(p.price)) onSave(p.id, { price: Number(price) }); };
+  const commitDiscount = () => { const d = Math.max(0, Math.min(90, parseInt(discount, 10) || 0)); if (d !== (p.discount_pct || 0)) onSave(p.id, { discount_pct: d }); };
   const commitTitle = () => { if (title.trim() && title.trim() !== p.title) onSave(p.id, { title: title.trim() }); };
   const commitDescription = () => { if (description !== (p.description || '')) onSave(p.id, { description }); };
   const commitStock = (key, val) => {
@@ -270,6 +272,7 @@ function ProductRow({ p, onSave, onDelete }) {
         </div>
         <div>
           <input style={{ ...input, padding: '7px 8px' }} type="number" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={commitPrice} />
+          {p.discount_pct > 0 && <span style={{ display: 'inline-block', marginTop: '4px', fontSize: '.7rem', fontWeight: 700, color: 'var(--frambuesa)' }}>Promo −{p.discount_pct}%</span>}
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {tones ? tones.map((t) => (
@@ -309,6 +312,10 @@ function ProductRow({ p, onSave, onDelete }) {
             <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Tonos (separados por coma, vacío = sin tonos)</label>
             <input style={input} placeholder="01, 05" value={tonesStr} onChange={(e) => setTonesStr(e.target.value)} onBlur={commitTones} />
           </div>
+          <div>
+            <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Descuento % (0 = sin promo)</label>
+            <input style={input} type="number" min="0" max="90" value={discount} onChange={(e) => setDiscount(e.target.value)} onBlur={commitDiscount} />
+          </div>
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '8px' }}>Fotos ({images.length}) — la primera es la principal</label>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -338,6 +345,7 @@ function NewProductForm({ onDone }) {
   const [price, setPrice] = React.useState('');
   const [tonesStr, setTonesStr] = React.useState('');
   const [defaultStock, setDefaultStock] = React.useState('1');
+  const [discount, setDiscount] = React.useState('0');
   const [file, setFile] = React.useState(null);
   const [preview, setPreview] = React.useState(null);
   const [saving, setSaving] = React.useState(false);
@@ -366,6 +374,7 @@ function NewProductForm({ onDone }) {
       const stock = tones ? Object.fromEntries(tones.map((t) => [t, parseInt(defaultStock, 10) || 0])) : { _default: parseInt(defaultStock, 10) || 0 };
       const { error } = await window.sb.from('products').insert({
         category, title: title.trim(), description: description.trim(), price: Number(price),
+        discount_pct: Math.max(0, Math.min(90, parseInt(discount, 10) || 0)),
         image_url, images: image_url ? [image_url] : null, tones, stock, active: true,
       });
       if (error) throw error;
@@ -411,6 +420,10 @@ function NewProductForm({ onDone }) {
         <div>
           <label style={label}>Stock {tonesStr.trim() ? '(por cada tono)' : ''}</label>
           <input style={input} type="number" min="0" value={defaultStock} onChange={(e) => setDefaultStock(e.target.value)} />
+        </div>
+        <div>
+          <label style={label}>Descuento % (opcional)</label>
+          <input style={input} type="number" min="0" max="90" placeholder="0" value={discount} onChange={(e) => setDiscount(e.target.value)} />
         </div>
         {err && <p style={{ gridColumn: '1 / -1', color: '#B3261E', fontSize: '.85rem', margin: 0 }}>{err}</p>}
         <div style={{ gridColumn: '1 / -1' }}>
