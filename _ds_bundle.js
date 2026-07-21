@@ -339,6 +339,7 @@ function ProductCard({
   const anyLeft = hasTones ? tones.some(t => rem(t) > 0) : rem(tone) > 0;
   const fullyOut = !anyLeft;
   const shownBadge = fullyOut ? 'Agotado' : discountPct > 0 ? '-' + discountPct + '%' : badge;
+  const isPromo = !fullyOut && discountPct > 0;
   const go = (e, dir) => {
     e.stopPropagation();
     setIdx(i => (i + dir + gallery.length) % gallery.length);
@@ -376,6 +377,13 @@ function ProductCard({
       ...(fullyOut ? {
         background: 'var(--ciruela)',
         color: '#fff'
+      } : isPromo ? {
+        background: 'var(--frambuesa)',
+        color: '#fff',
+        fontSize: '.9rem',
+        fontWeight: 700,
+        padding: '6px 13px',
+        boxShadow: '0 4px 12px rgba(216,68,127,.4)'
       } : {})
     }
   }, shownBadge), fullyOut && hasImage && /*#__PURE__*/React.createElement("div", {
