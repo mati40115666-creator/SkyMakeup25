@@ -340,7 +340,7 @@ window.CartDrawer = CartDrawer;
 const SK = window.SkyMakeupDesignSystem_ae8c70;
 const { Button, Eyebrow, Marquee, CategoryBubble, ProductCard, StepCard, TrustItem } = SK;
 
-const PRODUCT_CATEGORY_ORDER = ['Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos'];
+const PRODUCT_CATEGORY_ORDER = ['Combos/Ramos', 'Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos'];
 
 // ---- Stock ----
 // El stock ahora vive en la base de datos (tabla products.stock, jsonb).
@@ -358,6 +358,7 @@ const waLink = (msg) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURICompon
 const GENERIC_WA_MSG = '¡Hola Sky Makeup! 💖 Quiero hacer un pedido.';
 
 const CATEGORY_ANCHORS = {
+  'Combos/Ramos': 'cat-combos',
   'Rostro': 'cat-rostro',
   'Labiales': 'cat-labiales',
   'Máscaras y Delineadores': 'cat-mascaras',
@@ -366,6 +367,7 @@ const CATEGORY_ANCHORS = {
 };
 
 const CATEGORIES = [
+  { icon: '💐', label: 'Combos/Ramos', sublabel: 'Combos y ramos con varios productos' },
   { image: 'assets/category-rostro.jpg', label: 'Rostro', sublabel: 'Bases · Correctores · Rubores · Contornos · Iluminadores' },
   { image: 'assets/category-labiales.jpg', label: 'Labiales', sublabel: 'Mattes · Gloss · Delineadores de labios' },
   { image: 'assets/category-mascaras.jpg', label: 'Máscaras y Delineadores', sublabel: 'Máscaras · Delineadores' },
@@ -613,7 +615,7 @@ function Storefront() {
                 </div>
               );
             }
-            return PRODUCT_CATEGORY_ORDER.map((cat) => (
+            return PRODUCT_CATEGORY_ORDER.filter((cat) => products.some((p) => p.category === cat)).map((cat) => (
               <div key={cat} id={CATEGORY_ANCHORS[cat]} style={{ marginBottom: '46px', scrollMarginTop: '84px' }}>
                 <h3 style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '.85rem', letterSpacing: 'var(--tracking-tag)', textTransform: 'uppercase', color: 'var(--chicle)', marginBottom: '18px' }}>{cat}</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '22px' }}>

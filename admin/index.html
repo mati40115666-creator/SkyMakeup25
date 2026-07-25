@@ -70,7 +70,7 @@ function slugify(s) {
     .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
 }
 
-const CATEGORIES = ['Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos', 'Skincare'];
+const CATEGORIES = ['Combos/Ramos', 'Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos', 'Skincare'];
 
 function Admin() {
   const [session, setSession] = React.useState(null);
