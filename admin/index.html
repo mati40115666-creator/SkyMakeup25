@@ -70,7 +70,9 @@ function slugify(s) {
     .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
 }
 
-const CATEGORIES = ['Combos/Ramos', 'Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos', 'Skincare'];
+const CATEGORIES = ['Combos/Ramos', 'Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos', 'Brochas y Esponjas', 'Skincare'];
+// Nombre visible (el valor guardado en la base no cambia).
+const CATEGORY_LABELS = { 'Máscaras y Delineadores': 'Máscaras, Delineadores y Sombras' };
 
 function Admin() {
   const [session, setSession] = React.useState(null);
@@ -146,14 +148,14 @@ function Login() {
 }
 
 window.Admin = Admin;
-window.__skyAdminShared = { wrap, input, card, label, fmtMoney, resizeToFrame, slugify, CATEGORIES };
+window.__skyAdminShared = { wrap, input, card, label, fmtMoney, resizeToFrame, slugify, CATEGORIES, CATEGORY_LABELS };
 
 </script>
 <script type="text/babel">
 /* Sky Makeup — Admin: pestaña Productos.
    Editar stock/precio/estado, agregar producto nuevo con foto (auto-recorte 4:5), eliminar. */
 function ProductsTab() {
-  const { wrap, input, card, label, fmtMoney, resizeToFrame, slugify, CATEGORIES } = window.__skyAdminShared;
+  const { wrap, input, card, label, fmtMoney, resizeToFrame, slugify, CATEGORIES, CATEGORY_LABELS } = window.__skyAdminShared;
   const [products, setProducts] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [showForm, setShowForm] = React.useState(false);
@@ -199,7 +201,7 @@ function ProductsTab() {
 }
 
 function ProductRow({ p, onSave, onDelete }) {
-  const { input, fmtMoney, resizeToFrame, slugify, CATEGORIES } = window.__skyAdminShared;
+  const { input, fmtMoney, resizeToFrame, slugify, CATEGORIES, CATEGORY_LABELS } = window.__skyAdminShared;
   const [expanded, setExpanded] = React.useState(false);
   const [title, setTitle] = React.useState(p.title);
   const [description, setDescription] = React.useState(p.description || '');
@@ -268,7 +270,7 @@ function ProductRow({ p, onSave, onDelete }) {
         <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: images[0] ? `url(${images[0]}) center/cover` : 'var(--petalo)', flexShrink: 0 }} />
         <div>
           <b style={{ fontSize: '.92rem', display: 'block' }}>{p.title}</b>
-          <span style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{p.category}</span>
+          <span style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{CATEGORY_LABELS[p.category] || p.category}</span>
         </div>
         <div>
           <input style={{ ...input, padding: '7px 8px' }} type="number" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={commitPrice} />
@@ -301,7 +303,7 @@ function ProductRow({ p, onSave, onDelete }) {
           <div>
             <label style={{ fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ciruela-60)', display: 'block', marginBottom: '4px' }}>Categoría</label>
             <select style={input} value={p.category} onChange={(e) => onSave(p.id, { category: e.target.value })}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c] || c}</option>)}
             </select>
           </div>
           <div>
@@ -338,7 +340,7 @@ function ProductRow({ p, onSave, onDelete }) {
 }
 
 function NewProductForm({ onDone }) {
-  const { input, card, label, resizeToFrame, slugify, CATEGORIES } = window.__skyAdminShared;
+  const { input, card, label, resizeToFrame, slugify, CATEGORIES, CATEGORY_LABELS } = window.__skyAdminShared;
   const [category, setCategory] = React.useState(CATEGORIES[0]);
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
@@ -402,7 +404,7 @@ function NewProductForm({ onDone }) {
         <div>
           <label style={label}>Categoría</label>
           <select style={input} value={category} onChange={(e) => setCategory(e.target.value)}>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c] || c}</option>)}
           </select>
         </div>
         <div>

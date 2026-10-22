@@ -123,3 +123,11 @@
   --gradient-ring: conic-gradient(from 210deg, var(--chicle), #FF9EC7, var(--frambuesa), var(--chicle)); /* @kind other */ /* category bubble ring */
 }
 
+/* ---- Desplazamiento suave al navegar por anclas (Categorías, Productos, Cómo comprar) ----
+   Se desactiva si la persona tiene activada la opción "reducir movimiento" en su dispositivo. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* El header es sticky (68px): sin este margen el título de cada sección quedaba tapado al llegar. */
+#categorias, #productos, #como-comprar { scroll-margin-top: 68px; }

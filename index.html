@@ -339,7 +339,7 @@ window.CartDrawer = CartDrawer;
 const SK = window.SkyMakeupDesignSystem_ae8c70;
 const { Button, Eyebrow, Marquee, CategoryBubble, ProductCard, StepCard, TrustItem } = SK;
 
-const PRODUCT_CATEGORY_ORDER = ['Combos/Ramos', 'Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos'];
+const PRODUCT_CATEGORY_ORDER = ['Combos/Ramos', 'Rostro', 'Labiales', 'Máscaras y Delineadores', 'Pestañas y Pegamentos', 'Brochas y Esponjas'];
 
 // ---- Stock ----
 // El stock ahora vive en la base de datos (tabla products.stock, jsonb).
@@ -363,15 +363,23 @@ const CATEGORY_ANCHORS = {
   'Máscaras y Delineadores': 'cat-mascaras',
   'Skincare': 'productos',
   'Pestañas y Pegamentos': 'cat-pestanas',
+  'Brochas y Esponjas': 'cat-brochas',
+};
+
+// Nombre visible de cada categoría. La clave es el valor que está guardado en la base
+// (products.category), así que renombrar acá NO obliga a migrar los productos ya cargados.
+const CATEGORY_LABELS = {
+  'Máscaras y Delineadores': 'Máscaras, Delineadores y Sombras',
 };
 
 const CATEGORIES = [
   { image: 'assets/category-combos.jpg', label: 'Combos/Ramos', sublabel: 'Combos y ramos con varios productos' },
   { image: 'assets/category-rostro.jpg', label: 'Rostro', sublabel: 'Bases · Correctores · Rubores · Contornos · Iluminadores' },
   { image: 'assets/category-labiales.jpg', label: 'Labiales', sublabel: 'Mattes · Gloss · Delineadores de labios' },
-  { image: 'assets/category-mascaras.jpg', label: 'Máscaras y Delineadores', sublabel: 'Máscaras · Delineadores' },
+  { cat: 'Máscaras y Delineadores', image: 'assets/category-mascaras.jpg', label: 'Máscaras, Delineadores y Sombras', sublabel: 'Máscaras · Delineadores · Sombras' },
   { image: 'assets/category-skincare.jpg', label: 'Skincare', sublabel: 'Limpiezas · Hidratantes' },
   { image: 'assets/category-pestanas.jpg', label: 'Pestañas y Pegamentos', sublabel: 'Pestañas · Pegamentos' },
+  { image: 'assets/category-brochas.jpg', label: 'Brochas y Esponjas', sublabel: 'Brochas · Esponjas' },
 ];
 
 const wrap = { maxWidth: '1120px', margin: '0 auto', padding: '0 24px' };
@@ -535,7 +543,7 @@ function Storefront() {
                           <span style={{ width: '40px', height: '40px', borderRadius: '8px', flexShrink: 0, background: thumb ? `url(${thumb}) center/cover` : 'var(--petalo)' }} />
                           <span style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ display: 'block', fontSize: '.9rem', fontWeight: 600, color: 'var(--ciruela)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</span>
-                            <span style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{p.category}</span>
+                            <span style={{ fontSize: '.78rem', color: 'var(--ciruela-60)' }}>{CATEGORY_LABELS[p.category] || p.category}</span>
                           </span>
                           <span style={{ fontSize: '.9rem', fontWeight: 700, color: 'var(--frambuesa)', whiteSpace: 'nowrap' }}>{p.price}</span>
                         </button>
@@ -584,7 +592,12 @@ function Storefront() {
             <p style={subP}>Organizamos el catálogo igual que en Instagram: tocá una categoría y encontrá lo tuyo.</p>
           </div>
           <div className="sky-categories">
-            {CATEGORIES.map((c) => <CategoryBubble key={c.label} {...c} href={`#${CATEGORY_ANCHORS[c.label]}`} />)}
+            {CATEGORIES.map(({ cat, ...c }) => {
+              const k = cat || c.label;
+              // Si la categoría todavía no tiene productos cargados, la burbuja lleva al catálogo general.
+              const hasItems = products.some((p) => p.category === k);
+              return <CategoryBubble key={c.label} {...c} href={`#${hasItems ? CATEGORY_ANCHORS[k] : 'productos'}`} />;
+            })}
           </div>
         </div>
       </section>
@@ -616,7 +629,7 @@ function Storefront() {
             }
             return PRODUCT_CATEGORY_ORDER.filter((cat) => products.some((p) => p.category === cat)).map((cat) => (
               <div key={cat} id={CATEGORY_ANCHORS[cat]} style={{ marginBottom: '46px', scrollMarginTop: '84px' }}>
-                <h3 style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '.85rem', letterSpacing: 'var(--tracking-tag)', textTransform: 'uppercase', color: 'var(--chicle)', marginBottom: '18px' }}>{cat}</h3>
+                <h3 style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '.85rem', letterSpacing: 'var(--tracking-tag)', textTransform: 'uppercase', color: 'var(--chicle)', marginBottom: '18px' }}>{CATEGORY_LABELS[cat] || cat}</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '22px' }}>
                   {products.filter((p) => p.category === cat).map((p) => <ProductCard key={p.id} {...p} id={'prod-' + p.id} onAdd={(tone) => add(p, tone)} getRemaining={(tone) => remainingFor(p, tone)} />)}
                 </div>
