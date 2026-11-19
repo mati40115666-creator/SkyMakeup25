@@ -1,0 +1,24 @@
+# Mantiene activo el proyecto de Supabase (plan gratuito).
+# Supabase pausa los proyectos gratuitos tras 7 días sin actividad; este workflow hace una
+# lectura real a la base todos los días para que eso no pase.
+# La clave usada es la "publishable" (pública): es la misma que ya está en supabase-client.js.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '17 12 * * *'   # todos los días, 12:17 UTC (09:17 en Argentina)
+  workflow_dispatch:         # permite correrlo a mano desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Leer un producto de la base
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 10 --max-time 30 \
+            "https://bohthswmsvcllowhmtgd.supabase.co/rest/v1/products?select=id&limit=1" \
+            -H "apikey: sb_publishable_C0QY7naaRdtZYvg4ei8ytQ_h65-piuW" \
+            -H "Authorization: Bearer sb_publishable_C0QY7naaRdtZYvg4ei8ytQ_h65-piuW"
+          echo
+          echo "OK: Supabase respondió"
